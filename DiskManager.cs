@@ -175,7 +175,7 @@ namespace HBU_OS
             }
         }
 
-        public void WriteDirectoryEntries2Disk(Directory directory,FileAllocationTable fat,int startBlock) 
+        public void WriteDirectory2Disk(Directory directory,FileAllocationTable fat,int startBlock) 
         {
             int currentBlock = startBlock;
             int counter = 0;
@@ -215,16 +215,14 @@ namespace HBU_OS
             int dataLength = data.Length;
             int dataIndex = 0;
 
-            using (BinaryWriter writer = new(File.Open(DiskPath, FileMode.Open, FileAccess.Write), Encoding.ASCII))
+            using (BinaryWriter writer = new(File.Open(DiskPath, FileMode.Open), Encoding.ASCII))
             {
                 while (dataIndex < dataLength)
                 {
                     int bytesToWrite = Math.Min(BlockSize, dataLength - dataIndex);
                     writer.Seek(currentBlock * BlockSize, SeekOrigin.Begin);
-
                     writer.Write(Encoding.ASCII.GetBytes(data.Substring(dataIndex, bytesToWrite)));
-
-                    dataIndex += bytesToWrite;
+                        dataIndex += bytesToWrite;
                     if (dataIndex >= dataLength)
                         break;
                     currentBlock = fat.LinkTable[currentBlock];

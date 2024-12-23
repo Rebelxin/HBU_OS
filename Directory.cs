@@ -40,7 +40,14 @@ namespace HBU_OS
                 {
                     value = value.Substring(0, 2);
                 }
-                
+                if (value.Length ==1)
+                {
+                    value += "\0";
+                }
+                if (value.Length == 0)
+                {
+                    value += "\0\0";
+                }
                 byte[] asciiBytes = Encoding.ASCII.GetBytes(value);
                 string asciiString = Encoding.ASCII.GetString(asciiBytes);
                 _extendedName = asciiString;
@@ -55,13 +62,12 @@ namespace HBU_OS
         public bool IsDirectory { get; set; }
     }
 
-
-
     internal class Directory
     {
         public List<DirectoryEntry> FileObjects = new List<DirectoryEntry>();
         public void AddFileObject(string fileName, int startBlock,bool isDirectory,string extendedName)
         {
+            CheckName(fileName, extendedName, isDirectory);
             FileObjects.Add(new DirectoryEntry
             { 
                 FileObjectName = fileName,
@@ -71,10 +77,50 @@ namespace HBU_OS
                 IsDirectory = isDirectory
             });
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns>
+        /// return the copy of directory entry.
+        /// </returns>
         public DirectoryEntry FindFileObject(string fileName)
         {
             return FileObjects.FirstOrDefault(file => file.FileObjectName == fileName);
+        }
+
+        public void ModifyFileObjectName(string originFileName, string originExtendedName, string fileName,string extendedName)
+        {
+            
+            for (int i = 0; i < FileObjects.Count; i++)
+            {
+                if (FileObjects[i].FileObjectName == originFileName && FileObjects[i].ExtendedName == originExtendedName)
+                {
+                    var fileObject = FileObjects[i];
+                    CheckName(fileName,extendedName,fileObject.IsDirectory);
+                    fileObject.FileObjectName = fileName;
+                    fileObject.ExtendedName = extendedName;
+                    FileObjects[i] = fileObject;
+                }
+            }
+        }
+
+        public void CheckName(string name,string extendedName,bool isDirectory) 
+        {
+            if (!isDirectory)
+            {
+                if (extendedName == "dc")
+                {
+                    throw new Exception("非法命名");
+                }
+            }
+            else
+            {
+                if (!(extendedName == "dc"))
+                {
+                    throw new Exception("非法命名");
+                }
+            }
         }
 
         public void DeleteFile(string fileName)
