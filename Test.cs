@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,34 +9,37 @@ namespace HBU_OS
 {
     internal class Test
     {
+
         static bool TestFileSystem()
         {
             try
             {
-                FileSystem fileSystem = new FileSystem(); // 模拟 100 个磁盘块
 
-                //fileSystem.CreateFileObject("/test1.txt", 5); // 创建一个目录
-                //fileSystem.CreateFileObject("test2.txt", 3); // 创建一个 3 个块的文件
-                //fileSystem.ListRootFiles();               // 列出所有文件
-                //fileSystem.DeleteFile("test1.txt");   // 删除文件
-                //fileSystem.ListRootFiles();               // 再次列出文件
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        static bool TestDisk()
-        {
-            try
-            {
-
-                FileSystem fileSystem = new FileSystem();
-                fileSystem.T_DisplayDisk();
-                fileSystem.FAT.T_ListFat(5);
+                FileSystem fileSystem = new FileSystem(true);
+                fileSystem.DisplayDisk();
+                fileSystem.ListFAT(5);
                 fileSystem.RootDirectory.T_ListFiles();
+                fileSystem.CreateFileObject("\\tf1",false);
+                fileSystem.CreateFileObject("\\td1", true);
+                fileSystem.CreateFileObject("\\td1\\tf2", false);
+                fileSystem.CreateFileObject("\\td1\\tf3", false);
+                fileSystem.CreateFileObject("\\td1\\tf4", false);
+                fileSystem.CreateFileObject("\\td1\\td2", true);
+                fileSystem.CreateFileObject("\\td1\\td2\\tf5", false);
+                fileSystem.CreateFileObject("\\tf6", false);
+                fileSystem.CreateFileObject("\\tf6", false);
+                string data = "aaaaaaaa\naa";
+                fileSystem.WriteFile("\\tf1",data);
+                fileSystem.DeleteFile("\\tf1");
+                fileSystem = new FileSystem();
+                fileSystem.DisplayDisk();
+                fileSystem.ListFAT(5);
+                fileSystem.ListAllFiles();
+                string data1;
+                data1 = fileSystem.ReadFile("\\tf1");
+                Console.WriteLine("数据为："+data1);
+
+                //fileSystem.CreateFileObject();
 
                 return true;
             }
@@ -50,10 +54,7 @@ namespace HBU_OS
 
         static void Main(string[] args)
         {
-            Console.WriteLine(123);
-            for (int i = 1; i < 1; i++) {
-                Console.WriteLine(123);
-            }
+            TestFileSystem();
         }
     }
 }

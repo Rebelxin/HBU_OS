@@ -59,7 +59,6 @@ namespace HBU_OS
                     writer.Write(nullData);
                 }
             }
-
         }
 
         public void ReadData() {
@@ -107,10 +106,15 @@ namespace HBU_OS
                 reader.BaseStream.Seek(currentBlock*BlockSize, SeekOrigin.Begin);
                 while (currentBlock!=0) {
                     string fileName = Encoding.ASCII.GetString(reader.ReadBytes(3));
+
                     string extendedName = Encoding.ASCII.GetString(reader.ReadBytes(2));
+
                     byte file_startBlock = reader.ReadByte();
+
                     byte fileSize = reader.ReadByte();
+
                     bool isDirectory = (reader.ReadByte()!=0);
+
                     //检查数据是否有效
                     if (!(!isDirectory && fileSize == 0))
                     {
@@ -132,7 +136,7 @@ namespace HBU_OS
 
         public string ReadData2File(FileAllocationTable fat, int startBlock)
         {
-            int currentBlock = startBlock; // 起始块号
+            int currentBlock = startBlock;
             StringBuilder data = new StringBuilder(); // 使用 StringBuilder 来存储结果数据
             using (BinaryReader reader = new BinaryReader(File.OpenRead(DiskPath)))
             {
@@ -200,35 +204,40 @@ namespace HBU_OS
                 }
             }
         }
-        public void WriteFile2Disk(string data, FileAllocationTable fat, int startBlock) 
+        public void WriteFile2Disk(string data, FileAllocationTable fat, int startBlock)
         {
-            int currentBlock = startBlock;
-            int counter = 0;
-            using (BinaryWriter writer = new(File.Open(DiskPath, FileMode.Open), Encoding.ASCII))
+            if (string.IsNullOrEmpty(data))
             {
-                writer.Seek(currentBlock * BlockSize, SeekOrigin.Begin);
-                for (int i = 0; i < data.Length; i++) {
-                    if (counter % BlockSize == 0)
-                    {
-                        currentBlock = fat.LinkTable[currentBlock];
-                        if (currentBlock == 0)
-                        {
-                            throw new InvalidOperationException("文件所需磁盘块数量不足");
-                        }
-                        writer.Seek(currentBlock * BlockSize, SeekOrigin.Begin);
-                    }
-                    writer.Write(data[i]);
-                    counter++;
-                }
+                throw new ArgumentException("数据不能为空", nameof(data));
+            }
 
-                // 清理未写满的块的剩余部分
-                int remainingBytes = BlockSize - (counter % BlockSize);
+            int currentBlock = startBlock;
+            int dataLength = data.Length;
+            int dataIndex = 0;
+
+            using (BinaryWriter writer = new(File.Open(DiskPath, FileMode.Open, FileAccess.Write), Encoding.ASCII))
+            {
+                while (dataIndex < dataLength)
+                {
+                    int bytesToWrite = Math.Min(BlockSize, dataLength - dataIndex);
+                    writer.Seek(currentBlock * BlockSize, SeekOrigin.Begin);
+
+                    writer.Write(Encoding.ASCII.GetBytes(data.Substring(dataIndex, bytesToWrite)));
+
+                    dataIndex += bytesToWrite;
+                    if (dataIndex >= dataLength)
+                        break;
+                    currentBlock = fat.LinkTable[currentBlock];
+                    if (currentBlock == 0)
+                    {
+                        throw new InvalidOperationException("文件所需磁盘块数量不足");
+                    }
+                }
+                int remainingBytes = BlockSize - (dataLength % BlockSize);
                 if (remainingBytes > 0 && currentBlock != 0)
                 {
-                    for (int j = 0; j < remainingBytes; j++)
-                    {
-                        writer.Write((byte)0); // 填充空字节
-                    }
+                    writer.Seek(currentBlock * BlockSize + (dataLength % BlockSize), SeekOrigin.Begin);
+                    writer.Write(new byte[remainingBytes]); // 用空字节填充
                 }
             }
         }
@@ -240,7 +249,7 @@ namespace HBU_OS
             using (BinaryWriter writer = new(File.Open(DiskPath, FileMode.Open), Encoding.ASCII))
             {
                 writer.Seek(currentBlock * BlockSize, SeekOrigin.Begin);
-                while (currentBlock != 0) // FAT 的链表终止标志为 -1
+                while (currentBlock != 0)
                 {
                     writer.Seek(currentBlock * BlockSize, SeekOrigin.Begin);
 

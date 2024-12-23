@@ -60,14 +60,14 @@ namespace HBU_OS
     internal class Directory
     {
         public List<DirectoryEntry> FileObjects = new List<DirectoryEntry>();
-        public void AddFileObject(string fileName, int startBlock,bool isDirectory,string extendedName = "nf")
+        public void AddFileObject(string fileName, int startBlock,bool isDirectory,string extendedName)
         {
             FileObjects.Add(new DirectoryEntry
             { 
                 FileObjectName = fileName,
                 ExtendedName = extendedName,
                 StartBlock = startBlock,
-                FileSize = 0,
+                FileSize = 1,
                 IsDirectory = isDirectory
             });
         }
@@ -82,13 +82,19 @@ namespace HBU_OS
             FileObjects.RemoveAll(file => file.FileObjectName == fileName);
         }
 
-
         //测试用
         public void T_ListFiles()
         {
             foreach (var entry in FileObjects)
             {
-                Console.WriteLine($"文件名: {entry.FileObjectName}, 起始块: {entry.StartBlock}, 文件大小: {entry.FileSize}");
+                if (entry.IsDirectory)
+                {
+                    Console.WriteLine($"目录名: {entry.FileObjectName}, 起始块: {entry.StartBlock}");
+                }
+                else 
+                {
+                    Console.WriteLine($"文件名: {entry.FileObjectName}.{entry.ExtendedName} 起始块: {entry.StartBlock}, 文件大小: {entry.FileSize}");
+                }
             }
         }
     }
