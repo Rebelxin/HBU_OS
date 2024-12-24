@@ -77,6 +77,17 @@ namespace HBU_OS
             return LinkTable[currentBlock];
         }
 
+        public int GetEndBlock(int startBlock)
+        {
+            int currentBlock = startBlock;
+
+            while (GetNextBlock(currentBlock) != 0) 
+            {
+                currentBlock = GetNextBlock(currentBlock); 
+            }
+            return currentBlock;
+        }
+
         public void FreeBlockChain(int startBlock)
         {
             int current = startBlock;
@@ -98,7 +109,7 @@ namespace HBU_OS
         {
             for (int i = 0; i < BlockNum && i<limit ; i++)
             {
-                Console.WriteLine(" " + LinkTable[i] + " : " + BitMap[i]);
+                Console.WriteLine(i+" : " + LinkTable[i] + " : " + BitMap[i]);
             }
         }
     }

@@ -35,12 +35,19 @@ namespace HBU_OS
                 fileSystem.WriteData2File("\\tf1.t",data);
                 fileSystem.WriteData2File("\\td1\\tf2", data);
                 fileSystem.ModifyFileObject("\\td1", "td8");
-                fileSystem.DeleteFile("\\tf1.t");
-                fileSystem.ModifyFileObject("\\tf1.t", "tf1.k");
+                fileSystem.DeleteFileObject("\\tf1.t");
+                fileSystem.DeleteFileObject("\\td8\\td2");
+                fileSystem.ListAllFiles();
+                fileSystem.ModifyFileObject("\\tf7", "tf1.k");
+                fileSystem.ListAllFiles();
+                fileSystem.ListFAT(15);
+                fileSystem.CopyFileObject("\\tf6","\\td8\\tf6");
+                fileSystem.MoveFileObject("\\td8\\tf2","\\tf2");
                 fileSystem = new FileSystem();
                 fileSystem.DisplayDisk();
                 fileSystem.ListFAT(5);
                 fileSystem.ListAllFiles();
+                fileSystem.ShowFile("\\tf2");
                 string data1 = "";
                 try
                 {

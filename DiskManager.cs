@@ -54,7 +54,7 @@ namespace HBU_OS
             using (BinaryWriter writer = new(File.Open(DiskPath, FileMode.Open)))
             {
                 // 写入单个byte到文件
-                for (int i = 0; i < (BlockNum*BlockSize)/8; i++)
+                for (int i = 0; i < (BlockNum*BlockSize); i++)
                 {
                     writer.Write(nullData);
                 }
@@ -124,7 +124,8 @@ namespace HBU_OS
                                       extendedName);
                     }
                     counter++;
-                    if (counter % 8 == 0)
+                    //读完一个块
+                    if (counter % (BlockSize/8) == 0)
                     {
                         currentBlock = fat.LinkTable[currentBlock];
                         reader.BaseStream.Seek(currentBlock * BlockSize, SeekOrigin.Begin);
@@ -185,6 +186,7 @@ namespace HBU_OS
                 
                 foreach(var i in directory.FileObjects)
                 {
+                    var a = writer.BaseStream.Position;
                     for (int j = 0; j < 3; j++)
                     {
                         writer.Write(i.FileObjectName[j]);
@@ -197,10 +199,17 @@ namespace HBU_OS
                     writer.Write((byte)i.FileSize);
                     writer.Write((byte)(i.IsDirectory ? 1 : 0));
                     counter++;
-                    if (counter == BlockSize / 8) {
+                    if (counter % (BlockSize / 8) == 0) {
                         currentBlock=fat.LinkTable[currentBlock];
                         writer.Seek(currentBlock* BlockSize, SeekOrigin.Begin);
                     }
+                }
+
+                int remainingBytes = BlockSize - counter * 8;
+                if (remainingBytes > 0)
+                {
+                    writer.Seek(currentBlock * BlockSize + counter * 8, SeekOrigin.Begin);
+                    writer.Write(new byte[remainingBytes]); // 用空字节填充
                 }
             }
         }
@@ -222,9 +231,9 @@ namespace HBU_OS
                     int bytesToWrite = Math.Min(BlockSize, dataLength - dataIndex);
                     writer.Seek(currentBlock * BlockSize, SeekOrigin.Begin);
                     writer.Write(Encoding.ASCII.GetBytes(data.Substring(dataIndex, bytesToWrite)));
-                        dataIndex += bytesToWrite;
+                    dataIndex += bytesToWrite;
                     if (dataIndex >= dataLength)
-                        break;
+                        break; 
                     currentBlock = fat.LinkTable[currentBlock];
                     if (currentBlock == 0)
                     {
@@ -240,7 +249,7 @@ namespace HBU_OS
             }
         }
 
-        public void DeleteDataFromFile(FileAllocationTable fat, int startBlock)
+        public void DeleteDataFromFileObject(FileAllocationTable fat, int startBlock)
         {
             int currentBlock = startBlock;
             int counter = 0;

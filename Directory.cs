@@ -89,7 +89,12 @@ namespace HBU_OS
             return FileObjects.FirstOrDefault(file => file.FileObjectName == fileName);
         }
 
-        public void ModifyFileObjectName(string originFileName, string originExtendedName, string fileName,string extendedName)
+        public DirectoryEntry FindFileObject(string fileName,string extendedName)
+        {
+            return FileObjects.FirstOrDefault(file => file.FileObjectName == fileName&&file.ExtendedName == extendedName);
+        }
+
+        public void ModifyFileObject(string originFileName, string originExtendedName, string fileName,string extendedName,int fileSize)
         {
             
             for (int i = 0; i < FileObjects.Count; i++)
@@ -100,6 +105,7 @@ namespace HBU_OS
                     CheckName(fileName,extendedName,fileObject.IsDirectory);
                     fileObject.FileObjectName = fileName;
                     fileObject.ExtendedName = extendedName;
+                    fileObject.FileSize = fileSize;
                     FileObjects[i] = fileObject;
                 }
             }
@@ -123,9 +129,18 @@ namespace HBU_OS
             }
         }
 
-        public void DeleteFile(string fileName)
+        public void DeleteFileObject(string fileName,string extendedName)
         {
-            FileObjects.RemoveAll(file => file.FileObjectName == fileName);
+            try
+            {
+                var a = FileObjects.RemoveAll(file => file.FileObjectName == fileName && file.ExtendedName == extendedName);
+            }
+            catch (Exception)
+            {
+
+                throw new Exception("从目录删除文件对象失败");
+            }
+            
         }
 
         //测试用

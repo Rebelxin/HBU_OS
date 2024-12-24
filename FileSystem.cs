@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -37,6 +38,10 @@ namespace HBU_OS
             {
                 throw new Exception("文件不存在");
             }
+            if (superDirectoryName.Length!=1)
+            {
+                superDirectoryName += '\\';
+            }
             return (superDirectoryName,fileName);
         }
 
@@ -62,10 +67,10 @@ namespace HBU_OS
 
         }
         /// <summary>
-        /// Navigate directoryEntry from path
+        /// Navigate parentDirectoryEntry from path
         /// </summary>
         /// <param name="fullDirectoryPath"></param>
-        /// <returns>(Directory entry, Directory)</returns>
+        /// <returns>(Directory entry(from parent), Directory)</returns>
         /// <exception cref="Exception"></exception>
         private (DirectoryEntry, Directory) NavigateDirectory(string fullDirectoryPath)
         {
@@ -99,72 +104,43 @@ namespace HBU_OS
 
             return (fileObject,dir);
         }
-
-        private DirectoryEntry NavigateFile(string FileName)
+        /// <summary>
+        /// Navigate parentDirectoryEntry from path
+        /// </summary>
+        /// <param name="fullDirectoryPath"></param>
+        /// <returns>Directory entry(from parent)</returns>
+        /// <exception cref="Exception"></exception>
+        private DirectoryEntry NavigateFile(string fullFilePath)
         {
-            string[] parts = FileName.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] parts = fullFilePath.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
 
-            string extendedName;
+            string extendedName,fileName;
 
-            (parts[parts.Length - 1],extendedName) = SplitName(parts[parts.Length - 1]);
+            (fileName, extendedName) = SplitName(parts[parts.Length - 1]);
+            parts[parts.Length - 1] = fileName;
 
             Directory dir = RootDirectory;
             DirectoryEntry fileObject = default;
-            for (int i = 0; i < parts.Length; i++)
+            for (int i = 0; i < parts.Length-1; i++)
             {
-                fileObject = dir.FindFileObject(parts[i]);
-                if (EqualityComparer<DirectoryEntry>.Default.Equals(fileObject, default))
+                DirectoryEntry directoryEntry = dir.FindFileObject(parts[i]);
+                if (EqualityComparer<DirectoryEntry>.Default.Equals(directoryEntry, default))
                 {
                     throw new Exception("文件不存在");
                 }
-                if (!fileObject.IsDirectory && fileObject.FileObjectName == parts[parts.Length-1] && fileObject.ExtendedName == extendedName)
-                {
-                    break;
-                }
                 //不是文件则是目录继续向下寻找
-                dir = DiskManager0.ReadData2Directory(FAT, fileObject.StartBlock);
+                dir = DiskManager0.ReadData2Directory(FAT, directoryEntry.StartBlock);
+            }
+            //路径末尾文件搜寻
+            fileObject = dir.FindFileObject(fileName,extendedName);
+            if (EqualityComparer<DirectoryEntry>.Default.Equals(fileObject, default))
+            {
+                throw new Exception("文件不存在");
             }
 
             return fileObject;
-        }    
-        public void CreateFileObject(string fullFileName,bool isDirectory)
-        {
-            (string superDirectoryName, string fileName) = SplitPath(fullFileName);
-            string extendedName;
-            if (isDirectory)
-            {
-                extendedName = "dc";
-            }
-            else 
-            {
-                (fileName,extendedName) = SplitName(fileName);
-            }
-
-            Directory dir;
-            DirectoryEntry fileObject;
-
-            (fileObject, dir) = NavigateDirectory(superDirectoryName);
-            foreach (var subFile in dir.FileObjects) 
-            {
-                if (subFile.FileObjectName== fileName
-                    && subFile.ExtendedName== extendedName) 
-                {
-                    Console.WriteLine($"文件 \"{fileName}\" 创建失败，文件名重复！");
-                    return;
-                }
-
-            }
-            
-            int entryStartBlock;
-            entryStartBlock = fileObject.StartBlock;
-
-            int startBlock = FAT.AllocateBlock();
-            dir.AddFileObject(fileName, startBlock, isDirectory, extendedName);
-
-            DiskManager0.WriteFAT2Disk(FAT);
-            DiskManager0.WriteDirectory2Disk(dir, FAT, entryStartBlock);
-            Console.WriteLine($"文件 \"{fileName}\" 创建成功，起始块：{startBlock}");
         }
+
         /// <summary>
         /// 
         /// </summary>
@@ -172,39 +148,116 @@ namespace HBU_OS
         /// <param name="isDirectory">
         /// Is the file object a Directory
         /// </param>
-        /// <returns></returns>
-        public DirectoryEntry FindFileObject(string fileObjectPath,bool isDirectory)
+        /// <returns>Directory entry(from parent)</returns>
+        public DirectoryEntry NavigateFileObject(string fileObjectPath)
         {
             DirectoryEntry fileObject = default;
-            if (!isDirectory)
-            {
-                fileObject = NavigateFile(fileObjectPath);
-            }
-            else
-            {
-                (fileObject, _) = NavigateDirectory(fileObjectPath);
-            }
-            return fileObject;
-        }
 
-        public void ModifyFileObject(string fileObjectPath,string fileName) {
-            DirectoryEntry fileObject;
             try
             {
-                fileObject = FindFileObject(fileObjectPath, true);
+                fileObject = NavigateFile(fileObjectPath);
             }
             catch (Exception)
             {
                 try
                 {
-                    fileObject = FindFileObject(fileObjectPath, false);
+                    (fileObject, _) = NavigateDirectory(fileObjectPath);
                 }
                 catch (Exception)
                 {
 
-                    throw;
+                    throw new Exception("文件不存在");
                 }
             }
+            return fileObject;
+        }
+        public void CreateFileObject(string fullFileName, bool isDirectory)
+        {
+            (string superDirectoryName, string fileName) = SplitPath(fullFileName);
+            string extendedName;
+            if (isDirectory)
+            {
+                extendedName = "dc";
+            }
+            else
+            {
+                (fileName, extendedName) = SplitName(fileName);
+            }
+
+            Directory parentDirectory;
+            DirectoryEntry parentDirectoryEntry;
+
+            (parentDirectoryEntry, parentDirectory) = NavigateDirectory(superDirectoryName);
+            if (parentDirectoryEntry.FileObjectName=="rot"&& parentDirectory.FileObjects.Count>=(DiskManager.BlockSize/8))
+            {
+                throw new Exception($"文件 \"{fileName}\" 创建失败，根目录无法创建更多文件对象");
+            }
+            foreach (var subFile in parentDirectory.FileObjects)
+            {
+                if (subFile.FileObjectName == fileName
+                    && subFile.ExtendedName == extendedName)
+                {
+                    Console.WriteLine($"文件 \"{fileName}\" 创建失败，文件名重复！");
+                    return;
+                }
+            }
+            if ((parentDirectory.FileObjects.Count+1)% (DiskManager.BlockSize / 8)>=0)
+            {
+                int extendBlock = FAT.AllocateBlock();
+                FAT.LinkBlocks(FAT.GetEndBlock(parentDirectoryEntry.StartBlock),extendBlock);
+            }
+
+            int entryStartBlock;
+            entryStartBlock = parentDirectoryEntry.StartBlock;
+
+            int startBlock = FAT.AllocateBlock();
+            parentDirectory.AddFileObject(fileName, startBlock, isDirectory, extendedName);
+
+            DiskManager0.WriteFAT2Disk(FAT);
+            DiskManager0.WriteDirectory2Disk(parentDirectory, FAT, entryStartBlock);
+            Console.WriteLine($"文件 \"{fileName}\" 创建成功，起始块：{startBlock}");
+        }
+
+        public void CopyFileObject(string sourceFileObjectPath, string destinationFileObjectPath)
+        {
+            DirectoryEntry sourceFileObjectEntry, destinationFileObjectEntry;
+            sourceFileObjectEntry =  NavigateFileObject(sourceFileObjectPath);
+            CreateFileObject(destinationFileObjectPath,sourceFileObjectEntry.IsDirectory);
+            destinationFileObjectEntry = NavigateFileObject(destinationFileObjectPath);
+
+            if (sourceFileObjectEntry.IsDirectory)
+            {
+                Directory sourceDirectory = DiskManager0.ReadData2Directory(FAT, sourceFileObjectEntry.StartBlock);
+                foreach (var item in sourceDirectory.FileObjects)
+                {
+                    string subSourceFileObjectPath = sourceFileObjectPath + "\\"+item.FileObjectName;
+                    string subDestinationFileObjectPath = destinationFileObjectPath + "\\" + item.FileObjectName;
+                    CopyFileObject(subSourceFileObjectPath, subDestinationFileObjectPath);
+                }
+                DiskManager0.WriteDirectory2Disk(sourceDirectory, FAT,destinationFileObjectEntry.StartBlock);
+            }
+            else
+            {
+                string data = ReadFile(sourceFileObjectPath);
+                if (!string.IsNullOrEmpty(data)) {
+                    WriteData2File(destinationFileObjectPath, data);
+                }
+                
+            }
+        }
+
+        public void MoveFileObject(string sourceFileObjectPath, string destinationFileObjectPath)
+        {
+            CopyFileObject(sourceFileObjectPath, destinationFileObjectPath);
+
+            DeleteFileObject(sourceFileObjectPath);
+        }
+
+        public void ModifyFileObject(string fileObjectPath,string fileName) {
+            DirectoryEntry fileObject;
+
+            fileObject = NavigateFileObject(fileObjectPath);
+
             (string parentDirectoryPath,string unchangedFileName) = SplitPath(fileObjectPath);
             string extendedName;
 
@@ -217,37 +270,57 @@ namespace HBU_OS
             (DirectoryEntry parentFileObject, Directory parentDirectory) = NavigateDirectory(parentDirectoryPath);
             int parentEntryStartBlock = parentFileObject.StartBlock;
 
-            Console.WriteLine(fileName);
-            parentDirectory.ModifyFileObjectName(fileObject.FileObjectName, fileObject.ExtendedName, fileName, extendedName);
+            parentDirectory.ModifyFileObject(fileObject.FileObjectName, fileObject.ExtendedName, fileName, extendedName,fileObject.FileSize);
             
             DiskManager0.WriteDirectory2Disk(parentDirectory,FAT, parentEntryStartBlock);
 
+            if (fileObject.IsDirectory)
+            {
+                Console.WriteLine($"目录 \"{fileObjectPath}\" 已经重命名为 \"{parentDirectoryPath + fileName}\"");
+            }
+            else
+            {
+                Console.WriteLine($"文件 \"{fileObjectPath}\" 已经重命名为 \"{parentDirectoryPath + fileName}.{extendedName}\"");
+            }
+            
         }
 
-        public void WriteData2File(string fullFileName,string data)
+        public void WriteData2File(string fullFilePath,string data)
         {
-            DirectoryEntry fileObject;
+            Directory parentDirectory;
+            DirectoryEntry parentDirectoryEntry, file;
 
-            fileObject = NavigateFile(fullFileName);
+            (string parentDirectoryPath,_) = SplitPath(fullFilePath);
+            file = NavigateFile(fullFilePath);
+            
+            (parentDirectoryEntry, parentDirectory) = NavigateDirectory(parentDirectoryPath);
 
-            int startBlock = fileObject.StartBlock;
+            int startBlock = file.StartBlock;
+            int parentStartBlock = parentDirectoryEntry.StartBlock;
 
             int BlockNum = (data.Length + DiskManager.BlockSize - 1) / DiskManager.BlockSize;
             int currentBlock = startBlock;
             for (int i = 0; i < BlockNum - 1; i++)
             {
                 int nextBlock = FAT.AllocateBlock();
-                FAT.LinkBlocks(currentBlock, nextBlock); 
-                currentBlock = nextBlock; 
+                FAT.LinkBlocks(currentBlock, nextBlock);
+                currentBlock = nextBlock;
             }
-                DiskManager0.WriteFile2Disk(data, FAT, startBlock);
+            
+            parentDirectory.ModifyFileObject(file.FileObjectName,file.ExtendedName, 
+                                             file.FileObjectName, file.ExtendedName,BlockNum);
+            
+            DiskManager0.WriteDirectory2Disk(parentDirectory, FAT, parentStartBlock);
+
+            DiskManager0.WriteFile2Disk(data, FAT, startBlock);
+            Console.WriteLine($"文件 \"{fullFilePath}\" 写入成功");
         }
 
-        public string ReadFile(string fullFileName) 
+        public string ReadFile(string fullFilePath) 
         {
             DirectoryEntry fileObject;
 
-            fileObject = NavigateFile(fullFileName);
+            fileObject = NavigateFile(fullFilePath);
 
             int startBlock = fileObject.StartBlock;
 
@@ -255,24 +328,60 @@ namespace HBU_OS
             return data;
         }
 
-        public void DeleteFile(string fullFilePath)
+        public void DeleteFileObject(string fullFileObjectPath)
         {
-            (string superDirectoryPath, string fileName) = SplitPath(fullFilePath);
+            DirectoryEntry fileObject = NavigateFileObject(fullFileObjectPath);
 
-            Directory directory;
-            DirectoryEntry file,directoryEntry;
-            
-            (directoryEntry, directory) = NavigateDirectory(superDirectoryPath);
-            file = NavigateFile(fullFilePath);
-            int startBlock = file.StartBlock;
+            (string parentDirectoryPath, string fileObjectName) = SplitPath(fullFileObjectPath);
+            (fileObjectName, string fileObjectExtendedName) = SplitName(fileObjectName);
 
-            DiskManager0.DeleteDataFromFile(FAT, startBlock);
+
+            Directory parentDirectory, directory;
+            DirectoryEntry parentDirectoryEntry, fileObjectEntry;
+            (parentDirectoryEntry, parentDirectory) = NavigateDirectory(parentDirectoryPath);
+
+            if (fileObject.IsDirectory)
+            {
+                (fileObjectEntry, directory) = NavigateDirectory(fullFileObjectPath);
+                foreach (var item in directory.FileObjects)
+                {
+                    string tmp = fullFileObjectPath + "\\" + item.FileObjectName;
+                    DeleteFileObject(tmp);
+                }
+                fileObjectExtendedName = fileObjectEntry.ExtendedName;
+            }
+            else
+            {
+                fileObjectEntry = NavigateFile(fullFileObjectPath);
+            }
+
+            int startBlock = fileObjectEntry.StartBlock;
+            int parentStartBlock = parentDirectoryEntry.StartBlock;
+
+            DiskManager0.DeleteDataFromFileObject(FAT, startBlock);
 
             FAT.FreeBlockChain(startBlock);
             DiskManager0.WriteFAT2Disk(FAT);
+            //从父目录删除
+            parentDirectory.DeleteFileObject(fileObjectName,fileObjectExtendedName);
 
-            directory.DeleteFile(fileName);
-            DiskManager0.WriteDirectory2Disk(directory,FAT, directoryEntry.StartBlock);
+            DiskManager0.WriteDirectory2Disk(parentDirectory, FAT, parentStartBlock);
+            Console.WriteLine($"文件 \"{fullFileObjectPath}\" 删除成功");
+        }
+
+        public void ShowFile(string fullFileObjectPath) 
+        { 
+            var fileObject = NavigateFileObject(fullFileObjectPath);
+            Console.WriteLine("文件对象信息: ");
+            if (fileObject.IsDirectory)
+            {
+                Console.WriteLine($"目录名称: {fileObject.FileObjectName}");
+            }
+            else
+            {
+                Console.WriteLine($"文件名称: {fileObject.FileObjectName}.{fileObject.ExtendedName}");
+            }
+            Console.WriteLine($"文件对象大小： {fileObject.FileSize}");
         }
 
         public void ListRootFiles()
