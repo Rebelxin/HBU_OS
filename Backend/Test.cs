@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HBU_OS
+namespace HBU_OS.Backend
 {
     internal class Test
     {
@@ -20,7 +20,7 @@ namespace HBU_OS
                 fileSystem.DisplayDisk();
                 fileSystem.ListFAT(5);
                 fileSystem.ListRootFiles();
-                fileSystem.CreateFileObject("\\tf1.t",false);
+                fileSystem.CreateFileObject("\\tf1.t", false);
                 fileSystem.CreateFileObject("\\td1", true);
                 fileSystem.CreateFileObject("\\td1\\tf2", false);
                 fileSystem.CreateFileObject("\\td1\\tf3", false);
@@ -32,7 +32,7 @@ namespace HBU_OS
                 fileSystem.CreateFileObject("\\tf7", false);
                 fileSystem.ListAllFiles();
                 string data = "aabbbaaa\naa";
-                fileSystem.WriteData2File("\\tf1.t",data);
+                fileSystem.WriteData2File("\\tf1.t", data);
                 fileSystem.WriteData2File("\\td1\\tf2", data);
                 fileSystem.ModifyFileObject("\\td1", "td8");
                 fileSystem.DeleteFileObject("\\tf1.t");
@@ -41,8 +41,8 @@ namespace HBU_OS
                 fileSystem.ModifyFileObject("\\tf7", "tf1.k");
                 fileSystem.ListAllFiles();
                 fileSystem.ListFAT(15);
-                fileSystem.CopyFileObject("\\tf6","\\td8\\tf6");
-                fileSystem.MoveFileObject("\\td8\\tf2","\\tf2");
+                fileSystem.CopyFileObject("\\tf6", "\\td8\\tf6");
+                fileSystem.MoveFileObject("\\td8\\tf2", "\\tf2");
                 fileSystem = new FileSystem();
                 fileSystem.DisplayDisk();
                 fileSystem.ListFAT(5);
@@ -57,10 +57,10 @@ namespace HBU_OS
                 {
                     Console.WriteLine("no file");
                 }
-                Console.WriteLine("数据为："+data1);
+                Console.WriteLine("数据为：" + data1);
 
-                DirectoryEntry fileObject =default;
-                
+                DirectoryEntry fileObject = default;
+
                 //Console.WriteLine("StartBlock: "+fileObject.StartBlock);
 
 

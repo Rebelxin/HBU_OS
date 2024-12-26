@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace HBU_OS
+namespace HBU_OS.Backend
 {
     internal struct DirectoryEntry
     {
@@ -21,11 +21,11 @@ namespace HBU_OS
                 }
                 byte[] asciiBytes = Encoding.ASCII.GetBytes(value);
                 string asciiString = Encoding.ASCII.GetString(asciiBytes);
-                 _fileName = asciiString;
+                _fileName = asciiString;
             }
         }
 
-        private string _extendedName ;
+        private string _extendedName;
 
         //拓展名2个字节
         public string ExtendedName
@@ -40,7 +40,7 @@ namespace HBU_OS
                 {
                     value = value.Substring(0, 2);
                 }
-                if (value.Length ==1)
+                if (value.Length == 1)
                 {
                     value += "\0";
                 }
@@ -65,11 +65,11 @@ namespace HBU_OS
     internal class Directory
     {
         public List<DirectoryEntry> FileObjects = new List<DirectoryEntry>();
-        public void AddFileObject(string fileName, int startBlock,bool isDirectory,string extendedName)
+        public void AddFileObject(string fileName, int startBlock, bool isDirectory, string extendedName)
         {
             CheckName(fileName, extendedName, isDirectory);
             FileObjects.Add(new DirectoryEntry
-            { 
+            {
                 FileObjectName = fileName,
                 ExtendedName = extendedName,
                 StartBlock = startBlock,
@@ -89,20 +89,20 @@ namespace HBU_OS
             return FileObjects.FirstOrDefault(file => file.FileObjectName == fileName);
         }
 
-        public DirectoryEntry FindFileObject(string fileName,string extendedName)
+        public DirectoryEntry FindFileObject(string fileName, string extendedName)
         {
-            return FileObjects.FirstOrDefault(file => file.FileObjectName == fileName&&file.ExtendedName == extendedName);
+            return FileObjects.FirstOrDefault(file => file.FileObjectName == fileName && file.ExtendedName == extendedName);
         }
 
-        public void ModifyFileObject(string originFileName, string originExtendedName, string fileName,string extendedName,int fileSize)
+        public void ModifyFileObject(string originFileName, string originExtendedName, string fileName, string extendedName, int fileSize)
         {
-            
+
             for (int i = 0; i < FileObjects.Count; i++)
             {
                 if (FileObjects[i].FileObjectName == originFileName && FileObjects[i].ExtendedName == originExtendedName)
                 {
                     var fileObject = FileObjects[i];
-                    CheckName(fileName,extendedName,fileObject.IsDirectory);
+                    CheckName(fileName, extendedName, fileObject.IsDirectory);
                     fileObject.FileObjectName = fileName;
                     fileObject.ExtendedName = extendedName;
                     fileObject.FileSize = fileSize;
@@ -111,7 +111,7 @@ namespace HBU_OS
             }
         }
 
-        public void CheckName(string name,string extendedName,bool isDirectory) 
+        public void CheckName(string name, string extendedName, bool isDirectory)
         {
             if (!isDirectory)
             {
@@ -129,7 +129,7 @@ namespace HBU_OS
             }
         }
 
-        public void DeleteFileObject(string fileName,string extendedName)
+        public void DeleteFileObject(string fileName, string extendedName)
         {
             try
             {
@@ -140,7 +140,7 @@ namespace HBU_OS
 
                 throw new Exception("从目录删除文件对象失败");
             }
-            
+
         }
 
         //测试用
@@ -152,7 +152,7 @@ namespace HBU_OS
                 {
                     Console.WriteLine($"目录名: {entry.FileObjectName}, 起始块: {entry.StartBlock}");
                 }
-                else 
+                else
                 {
                     Console.WriteLine($"文件名: {entry.FileObjectName}.{entry.ExtendedName} 起始块: {entry.StartBlock}, 文件大小: {entry.FileSize}");
                 }

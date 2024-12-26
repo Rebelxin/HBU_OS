@@ -8,29 +8,30 @@ using System.Text;
 using System.Threading.Tasks;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace HBU_OS
+namespace HBU_OS.Backend
 {
     internal class DiskManager
     {
-        public string DiskName { get;private set; }
+        public string DiskName { get; private set; }
 
-        public static short BlockNum=128;
-        public static short BlockSize=64;
+        public static short BlockNum = 128;
+        public static short BlockSize = 64;
 
         private string DiskPath;
         public DiskManager(string name = "disk0")
-        { 
+        {
             DiskName = name;
             DiskPath = Path.Combine(Environment.CurrentDirectory, DiskName);
             CreateDisk();
         }
 
-        public void CreateDisk() {
+        public void CreateDisk()
+        {
             if (File.Exists(DiskPath))
             {
-                Console.WriteLine("文件已存在\n"+ DiskPath);
+                Console.WriteLine("文件已存在\n" + DiskPath);
             }
-            else 
+            else
             {
                 try
                 {
@@ -48,27 +49,29 @@ namespace HBU_OS
             }
         }
 
-        public void InitializeDisk() {
+        public void InitializeDisk()
+        {
             byte nullData = 0;
             // 使用BinaryWriter来写入单个byte
             using (BinaryWriter writer = new(File.Open(DiskPath, FileMode.Open)))
             {
                 // 写入单个byte到文件
-                for (int i = 0; i < (BlockNum*BlockSize); i++)
+                for (int i = 0; i < BlockNum * BlockSize; i++)
                 {
                     writer.Write(nullData);
                 }
             }
         }
 
-        public void ReadData() {
+        public void ReadData()
+        {
             byte tmp;
             int counter = 0;
             using (BinaryReader reader = new BinaryReader(File.OpenRead(DiskPath)))
             {
                 for (int i = 0; reader.BaseStream.Position < reader.BaseStream.Length; i++)
                 {
-                    if (i==2*BlockSize||i==3*BlockSize) 
+                    if (i == 2 * BlockSize || i == 3 * BlockSize)
                     {
                         Console.WriteLine(counter);
                     }
@@ -97,14 +100,16 @@ namespace HBU_OS
             return fat;
         }
 
-        public Directory ReadData2Directory(FileAllocationTable fat, int startBlock) {
+        public Directory ReadData2Directory(FileAllocationTable fat, int startBlock)
+        {
             Directory directory = new Directory();
             int currentBlock = startBlock;
             int counter = 0;
             using (BinaryReader reader = new BinaryReader(File.OpenRead(DiskPath)))
             {
-                reader.BaseStream.Seek(currentBlock*BlockSize, SeekOrigin.Begin);
-                while (currentBlock!=0) {
+                reader.BaseStream.Seek(currentBlock * BlockSize, SeekOrigin.Begin);
+                while (currentBlock != 0)
+                {
                     string fileName = Encoding.ASCII.GetString(reader.ReadBytes(3));
 
                     string extendedName = Encoding.ASCII.GetString(reader.ReadBytes(2));
@@ -113,7 +118,7 @@ namespace HBU_OS
 
                     byte fileSize = reader.ReadByte();
 
-                    bool isDirectory = (reader.ReadByte()!=0);
+                    bool isDirectory = reader.ReadByte() != 0;
 
                     //检查数据是否有效
                     if (!(!isDirectory && fileSize == 0))
@@ -125,7 +130,7 @@ namespace HBU_OS
                     }
                     counter++;
                     //读完一个块
-                    if (counter % (BlockSize/8) == 0)
+                    if (counter % (BlockSize / 8) == 0)
                     {
                         currentBlock = fat.LinkTable[currentBlock];
                         reader.BaseStream.Seek(currentBlock * BlockSize, SeekOrigin.Begin);
@@ -169,22 +174,22 @@ namespace HBU_OS
                 writer.Seek(0, SeekOrigin.Begin);
                 for (int i = 0; i < BlockNum; i++)
                 {
-                    byte binary = (byte)((fat.LinkTable[i] & 0x7F) | ((fat.BitMap[i] ? 0x80 : 0x00)));
+                    byte binary = (byte)(fat.LinkTable[i] & 0x7F | (fat.BitMap[i] ? 0x80 : 0x00));
                     writer.Write(binary);
                 }
 
             }
         }
 
-        public void WriteDirectory2Disk(Directory directory,FileAllocationTable fat,int startBlock) 
+        public void WriteDirectory2Disk(Directory directory, FileAllocationTable fat, int startBlock)
         {
             int currentBlock = startBlock;
             int counter = 0;
-            using (BinaryWriter writer = new(File.Open(DiskPath, FileMode.Open),Encoding.ASCII))
-            { 
+            using (BinaryWriter writer = new(File.Open(DiskPath, FileMode.Open), Encoding.ASCII))
+            {
                 writer.Seek(currentBlock * BlockSize, SeekOrigin.Begin);
-                
-                foreach(var i in directory.FileObjects)
+
+                foreach (var i in directory.FileObjects)
                 {
                     var a = writer.BaseStream.Position;
                     for (int j = 0; j < 3; j++)
@@ -199,9 +204,10 @@ namespace HBU_OS
                     writer.Write((byte)i.FileSize);
                     writer.Write((byte)(i.IsDirectory ? 1 : 0));
                     counter++;
-                    if (counter % (BlockSize / 8) == 0) {
-                        currentBlock=fat.LinkTable[currentBlock];
-                        writer.Seek(currentBlock* BlockSize, SeekOrigin.Begin);
+                    if (counter % (BlockSize / 8) == 0)
+                    {
+                        currentBlock = fat.LinkTable[currentBlock];
+                        writer.Seek(currentBlock * BlockSize, SeekOrigin.Begin);
                     }
                 }
 
@@ -233,17 +239,17 @@ namespace HBU_OS
                     writer.Write(Encoding.ASCII.GetBytes(data.Substring(dataIndex, bytesToWrite)));
                     dataIndex += bytesToWrite;
                     if (dataIndex >= dataLength)
-                        break; 
+                        break;
                     currentBlock = fat.LinkTable[currentBlock];
                     if (currentBlock == 0)
                     {
                         throw new InvalidOperationException("文件所需磁盘块数量不足");
                     }
                 }
-                int remainingBytes = BlockSize - (dataLength % BlockSize);
+                int remainingBytes = BlockSize - dataLength % BlockSize;
                 if (remainingBytes > 0 && currentBlock != 0)
                 {
-                    writer.Seek(currentBlock * BlockSize + (dataLength % BlockSize), SeekOrigin.Begin);
+                    writer.Seek(currentBlock * BlockSize + dataLength % BlockSize, SeekOrigin.Begin);
                     writer.Write(new byte[remainingBytes]); // 用空字节填充
                 }
             }

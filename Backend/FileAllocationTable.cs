@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HBU_OS
+namespace HBU_OS.Backend
 {
-    
+
     internal class FileAllocationTable
     {
         //一个块用一个字节表示
@@ -81,9 +81,9 @@ namespace HBU_OS
         {
             int currentBlock = startBlock;
 
-            while (GetNextBlock(currentBlock) != 0) 
+            while (GetNextBlock(currentBlock) != 0)
             {
-                currentBlock = GetNextBlock(currentBlock); 
+                currentBlock = GetNextBlock(currentBlock);
             }
             return currentBlock;
         }
@@ -99,17 +99,18 @@ namespace HBU_OS
             }
         }
 
-        public void T_ListFat() 
+        public void T_ListFat()
         {
-            for (int i=0;i< BlockNum;i++) {
-                Console.WriteLine(" "+LinkTable[i]+" : " + BitMap[i]);
+            for (int i = 0; i < BlockNum; i++)
+            {
+                Console.WriteLine(" " + LinkTable[i] + " : " + BitMap[i]);
             }
         }
         public void T_ListFat(int limit)
         {
-            for (int i = 0; i < BlockNum && i<limit ; i++)
+            for (int i = 0; i < BlockNum && i < limit; i++)
             {
-                Console.WriteLine(i+" : " + LinkTable[i] + " : " + BitMap[i]);
+                Console.WriteLine(i + " : " + LinkTable[i] + " : " + BitMap[i]);
             }
         }
     }

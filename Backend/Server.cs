@@ -6,7 +6,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HBU_OS
+namespace HBU_OS.Backend
 {
     internal class Server
     {
