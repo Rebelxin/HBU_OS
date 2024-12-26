@@ -16,6 +16,7 @@ class ClientThread(QThread):
         self.port = port
         self.message = message
 
+
     def run(self):
         try:
             # 创建 TCP 连接

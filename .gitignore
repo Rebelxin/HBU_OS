@@ -361,3 +361,10 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/HBU_OS.sln
+/.gitignore
+/Frontend/Frontend.pyproj
+/Backend/Properties
+/Backend/Backend.csproj
+/Backend/LICENSE.txt
+

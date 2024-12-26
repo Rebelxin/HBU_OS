@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace HBU_OS.Backend
+namespace Backend
 {
     internal struct DirectoryEntry
     {

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HBU_OS.Backend
+namespace Backend
 {
     internal class Test
     {
