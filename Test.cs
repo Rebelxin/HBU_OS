@@ -77,7 +77,7 @@ namespace HBU_OS
 
         static void Main(string[] args)
         {
-            TestFileSystem();
+            Server.ListenPort();
         }
     }
 }
