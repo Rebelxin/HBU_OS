@@ -1,11 +1,12 @@
-import sys
+import sys, webbrowser
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor, QTextCharFormat, QTextCursor
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QColor, QTextCharFormat, QTextCursor, QDesktopServices
 from PyQt5.QtWidgets import QApplication, QPlainTextEdit, QTextEdit
 from JSONRequest import JSONRequest
 
 class Terminal(QPlainTextEdit):
+    submit = pyqtSignal(str)
     def __init__(self,parent):
         super().__init__()
 
@@ -13,7 +14,7 @@ class Terminal(QPlainTextEdit):
         self.Request = None
         self.setWindowTitle("模拟终端")
         self.insertPlainText("/> ")
-        self.font_size = 8  # 字号
+        self.font_size = 10  # 字号
         self.text_background_color = "#868686"  # 滑选内容底色
 
         self.cmd_history = []  # 输入历史
@@ -80,19 +81,44 @@ class Terminal(QPlainTextEdit):
                 else:
                     self.insertPlainText(f"{self.cmd_history[self.cmd_history_index]}")
 
-    def process(self):
-        text = self.textCursor().block().text()[len(self.title) :].split(" ")
+    def openUrl(self, event):
+        cursor = self.cursorForPosition(event.pos())
+        pos = cursor.positionInBlock()
+        text = cursor.block().text()
 
-        if len(text) > 1 and text[0] == "setSelectionColor" and text[1][0] == "#":
-            color = [_ for _ in text[1][1:] if _ in "0123456789ABCDEF"]
+        if "(▷)" in text and pos <= 3:
+            webbrowser.open(
+                "https://bbs.mihoyo.com/bh3/wiki/content/2298/detail?bbs_presentation_style=no_header"
+            )
+
+    def internalCmd(self, text):
+        if text == "clear":
+            self.clear()  # 清空终端
+            self.cmd_history = []  # 清空历史命令
+            self.temp_cmd = None  # 清空暂存命令
+            return
+        if text == "Da Capo":
+            self.clear()  # 清空终端
+            self.insertPlainText("(▷) Da Capo: ♪\n")
+            return
+
+        cmd = text.split(" ")
+        if len(cmd) > 1 and cmd[0] == "setSelectionColor" and cmd[1][0] == "#":
+            color = [_ for _ in cmd[1][1:] if _ in "0123456789ABCDEF"]
             if len(color) > 5:
                 self.text_background_color = "#" + "".join(color)
                 self.setStyle()
 
-        if len(text) > 1 and text[0] == "setTitle":
-            self.title = " ".join(text[1:])
+        if len(cmd) > 1 and cmd[0] == "setTitle":
+            self.title = " ".join(cmd[1:])
 
-        self.insertPlainText(f"\n{self.title}")  # 插入新行，并在新行前添加路径
+        self.insertPlainText("\n")
+
+    def process(self):
+        text = self.textCursor().block().text()[len(self.title) :]
+        self.internalCmd(text)  # 处理内部命令
+        self.submit.emit(text)  # 提交命令到主窗口
+        self.insertPlainText(f"{self.title}")  # 不换行，仅插入title
 
     def keyPressEvent(self, event):
         last_block, cursor_pos_in_block = self.cursorPosCheck(self.textCursor())
@@ -159,6 +185,7 @@ class Terminal(QPlainTextEdit):
         super().keyPressEvent(event)
 
     def mousePressEvent(self, event):
+        self.openUrl(event)  # 打开超链接
         self.rmTextBackground()  # 清除文字底色
         if event.button() == Qt.LeftButton:
             cursor1 = self.cursorForPosition(event.pos())
@@ -168,7 +195,7 @@ class Terminal(QPlainTextEdit):
                 self.cursorForPosition(event.pos())
             )
             if not last_block or cursor_pos_in_block < len(self.title):
-                return  # 如果 不是最后一行 或 点击位置在前四列，则不改变光标位置
+                return  # 如果 不是最后一行 或 点击位置在title所在列，则不改变光标位置
             else:
                 self.cursor_pos_record = event.pos()
                 return
@@ -222,7 +249,9 @@ class Terminal(QPlainTextEdit):
         # 选择要着色的文本范围
         cursor = self.textCursor()
         cursor.setPosition(start)
-        cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, end - start)
+        cursor.movePosition(
+            QTextCursor.NextCharacter, QTextCursor.KeepAnchor, end - start
+        )
         selection.cursor = cursor
         # 将额外的选择区域添加到列表中
         self.extra_selections.append(selection)

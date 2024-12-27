@@ -2,11 +2,13 @@ import sys
 
 from PyQt5.QtWidgets import QMainWindow, QApplication, QSplitter, QWidget, QVBoxLayout
 from PyQt5.QtGui import QPalette
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QUrl
 
 from terminal import Terminal
 from diagram import Diagram
 from directory import Directory
+from cmd_checker import CmdFormatChecker
+from disk import Disk
 
 
 class MainWindow(QMainWindow):
@@ -73,6 +75,34 @@ class MainWindow(QMainWindow):
 
         self.diag_win = Diagram()
         self.right_layout.addWidget(self.diag_win)
+
+        self.cmd_checker = CmdFormatChecker()
+        self.disk = Disk()
+
+        self.cmd_win.submit.connect(self.getCmd)
+
+    def getCmd(self, cmd: str):
+        # print("check")
+        status, cmd_prompt, info = self.cmd_checker.check(cmd)
+        # print(status, cmd_prompt, info)
+        # cmd_checker只负责细致检查命令格式，不检查命令是否能执行成功
+        # status: bool, True表示命令格式正确，False表示命令格式错误
+        # cmd_prompt: str, 命令提示符
+        # info: lst, 内容，命令格式正确时为路径等必要信息，命令格式错误时则为报错信息
+
+        if status:
+            result = self.disk.operate(cmd_prompt, info)
+            if result:
+                self.respondCmd(cmd_prompt, result)
+
+    def respondCmd(self, cmd_prompt, result):
+        method = getattr(self, cmd_prompt, None)
+        if method:
+            method(result)
+
+    def cd(self, result):
+        self.cmd_win.title = "/".join(result) + "> " if result != [""] else "/> "
+        print(result)
 
     def RequestSendEvent(self, Request):
         self.parent.RequestSendEvent(Request)
