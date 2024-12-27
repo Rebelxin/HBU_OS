@@ -86,7 +86,7 @@ class Terminal(QPlainTextEdit):
         pos = cursor.positionInBlock()
         text = cursor.block().text()
 
-        if "(▷)" in text and pos <= 3:
+        if text[:3] == "(▷)" and pos < 14:
             webbrowser.open(
                 "https://bbs.mihoyo.com/bh3/wiki/content/2298/detail?bbs_presentation_style=no_header"
             )
