@@ -12,7 +12,7 @@ from PyQt5.QtGui import QIcon
 
 from embedded_custom_widgets import RightClickMenu, reNameLineEdit
 
-
+#asdadasdada#asdadasdada
 class Directory(QTreeWidget):
     def __init__(self):
         super().__init__()

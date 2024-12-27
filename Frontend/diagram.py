@@ -3,7 +3,7 @@ from PyQt5.QtGui import QPainter, QPainterPath, QBrush, QPen, QColor
 from PyQt5.QtWidgets import QWidget, QApplication
 
 
-class EllipseSectorRing:
+class EllipseSectorRing:#asdadasdada
     def __init__(self, rect, start_angle, span_angle, color):
         self.rect = rect
         self.start_angle = start_angle

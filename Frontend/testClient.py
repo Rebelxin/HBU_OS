@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QPushButton,
 from PyQt5.QtCore import QThread, pyqtSignal
 
 import os_ui
-
+#asdadasdada
 
 class ClientConnect():
     def __init__(self, host, port, message):
