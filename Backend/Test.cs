@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
+using static Backend.Server;
 
 namespace Backend
 {
@@ -46,7 +48,7 @@ namespace Backend
                 fileSystem = new FileSystem();
                 fileSystem.DisplayDisk();
                 fileSystem.ListFAT(5);
-                fileSystem.ListAllFiles();
+                fileSystem.TraverseFileTree();
                 fileSystem.ShowFile("\\tf2");
                 string data1 = "";
                 try
@@ -73,10 +75,9 @@ namespace Backend
             }
         }
 
-
-
         static void Main(string[] args)
         {
+            TestFileSystem();
             Server.ListenPort();
         }
     }

@@ -5,11 +5,47 @@ using System.Net.Sockets;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace Backend
 {
     internal class Server
     {
+        public class Request
+        {
+            public string RequestType { get; set; }
+            public string[] Data { get; set; }
+        }
+
+        // 响应数据结构
+        public class Response
+        {
+            public string Status { get; set; }
+            public object Data { get; set; }
+            public string Message { get; set; }
+        }
+        static Response HandleRequest(Request request)
+        {
+            if (request.RequestType == "GET_FILE_TREE")
+            {
+                FileSystem fs = new FileSystem();
+                // 假设返回一个简单的文件树
+                return new Response
+                {
+                    Status = "Success",
+                    Data = fs.TraverseFileTree(),
+                    Message = "Alllll files!!!!"
+                };
+            }
+            else
+            {
+                return new Response
+                {
+                    Status = "Error",
+                    Message = $"Unsupported request type."
+                };
+            }
+        }
 
         public static void ListenPort()
         {
@@ -17,31 +53,33 @@ namespace Backend
             TcpListener server = new TcpListener(IPAddress.Loopback, port);
             server.Start();
             Console.WriteLine($"Server started at 127.0.0.1:{port}");
-
-            Task.Run(() =>
+            while (true)
             {
-                while (true)
-                {
-                    var client = server.AcceptTcpClient();
-                    Task.Run(() =>
-                    {
-                        var stream = client.GetStream();
-                        byte[] buffer = new byte[1024];
-                        int bytesRead = stream.Read(buffer, 0, buffer.Length);
+                var client = server.AcceptTcpClient();
+                var stream = client.GetStream();
+                byte[] buffer = new byte[1024];
+                int bytesRead = stream.Read(buffer, 0, buffer.Length);
 
-                        // 读取客户端发送的消息
-                        string receivedMessage = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                        Console.WriteLine($"Received: {receivedMessage}");
+                // 读取客户端发送的消息
+                string receivedData = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
-                        // 处理消息并返回响应
-                        string response = $"Processed: {receivedMessage} at {DateTime.Now}";
-                        byte[] responseBytes = Encoding.UTF8.GetBytes(response);
-                        stream.Write(responseBytes, 0, responseBytes.Length);
+                var request = JsonSerializer.Deserialize<Request>(receivedData);
 
-                        client.Close();
-                    });
-                }
-            });
+                Console.WriteLine(request);
+
+                Console.WriteLine($"Received: {request.RequestType}");
+
+                var response = HandleRequest(request);
+
+                // 处理消息并返回响应
+                Console.WriteLine($"Responsed status: {response.Status}");
+                var responseJson = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(response));
+                stream.Write(responseJson, 0, responseJson.Length);
+
+                client.Close();
+
+            }
+
 
             Console.WriteLine("Press Enter to exit.");
             Console.ReadLine();

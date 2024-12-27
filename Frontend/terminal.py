@@ -3,14 +3,14 @@ import sys
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QTextCharFormat, QTextCursor
 from PyQt5.QtWidgets import QApplication, QPlainTextEdit, QTextEdit
-
+from JSONRequest import JSONRequest
 
 class Terminal(QPlainTextEdit):
     def __init__(self,parent):
         super().__init__()
 
         self.parent = parent
-        self.command = None
+        self.Request = None
         self.setWindowTitle("模拟终端")
         self.insertPlainText("/> ")
         self.font_size = 8  # 字号
@@ -137,9 +137,13 @@ class Terminal(QPlainTextEdit):
         if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:  # 响应回车键
             self.rmTextBackground()  # 清除滑选内容底色
             self.moveCursor(QTextCursor.EndOfLine)  # 移动光标到行尾
-            self.command = cmd = self.textCursor().block().text()[len(self.title) :]  # 获取键入命令
+            cmd = self.textCursor().block().text()[len(self.title) :]  # 获取键入命令
 
-            self.parent.commandSendEvent(self.command)
+            self.Request = self.ParseCommand()  # 解析命令
+
+            #请求事件
+            self.parent.RequestSendEvent(self.Request)
+
             if cmd in self.cmd_history:  # 如果该命令先前使用过，则将其移动到列表最后
                 self.cmd_history.remove(cmd)
             if cmd != "":
@@ -227,6 +231,15 @@ class Terminal(QPlainTextEdit):
     def rmTextBackground(self):
         self.extra_selections.clear()
         self.setExtraSelections(self.extra_selections)
+
+    def ParseCommand(self):
+        command = self.textCursor().block().text()[len(self.title):]
+        commandContent = command.split(" ")
+        commandRequest = JSONRequest("",None).getJSON()
+        if commandContent[0] == "tree":
+            commandRequest = JSONRequest("GET_FILE_TREE", commandContent[1:]).getJSON()
+
+        return commandRequest
 
 
 """

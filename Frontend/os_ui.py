@@ -74,6 +74,5 @@ class MainWindow(QMainWindow):
         self.diag_win = Diagram()
         self.right_layout.addWidget(self.diag_win)
 
-    def commandSendEvent(self, command):
-        print(f"成功触发{self.windowTitle()}类")
-        self.parent.commandSendEvent(command)
+    def RequestSendEvent(self, Request):
+        self.parent.RequestSendEvent(Request)

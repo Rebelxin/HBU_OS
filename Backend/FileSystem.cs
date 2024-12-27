@@ -1,15 +1,26 @@
 ﻿using System.IO;
 using System.Reflection.PortableExecutable;
 using System.Text;
+using System.Text.Json;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Backend
 {
     internal class FileSystem
     {
+        public class FileNode
+        {
+            public string Name { get; set; }
+            public bool IsDirectory { get; set; }
+            public int StartBlock { get; set; }      
+            public long FileSize { get; set; }        
+            public List<FileNode> Children { get; set; } = new(); 
+        }
+
         public FileAllocationTable FAT;
         public Directory RootDirectory;
         private readonly DiskManager DiskManager0;
+        private FileNode RootNode;
 
         public FileSystem()
         {
@@ -430,6 +441,57 @@ namespace Backend
         public void ListFAT(int limit)
         {
             FAT.T_ListFat(limit);
+        }
+
+        public FileNode TraverseFileTree()
+        {
+            FileNode rootNode = new FileNode{ 
+                Name = "root",
+                IsDirectory = true,
+                FileSize = 1,
+                StartBlock = 2
+            };
+
+
+            BuildFileTree(RootDirectory,rootNode);
+
+            string json = JsonSerializer.Serialize(rootNode, new JsonSerializerOptions
+            {
+                WriteIndented = true // 美化 JSON 输出
+            });
+
+            Console.WriteLine(json);
+
+            return rootNode;
+        }
+
+        private void BuildFileTree(Directory dir,FileNode parent)
+        {
+            foreach (var fileObject in dir.FileObjects)
+            {
+                FileNode childFileNode = new FileNode();
+
+                childFileNode.IsDirectory = fileObject.IsDirectory;
+                childFileNode.StartBlock = fileObject.StartBlock;
+                childFileNode.FileSize = fileObject.FileSize;
+
+
+                if (fileObject.IsDirectory)
+                {
+                    childFileNode.Name = fileObject.FileObjectName;
+
+                    Directory subdir = DiskManager0.ReadData2Directory(FAT, fileObject.StartBlock);
+
+                    BuildFileTree(subdir, childFileNode);
+
+                    parent.Children.Add(childFileNode);
+                }
+                else
+                {
+                    childFileNode.Name = fileObject.FileObjectName + "." + fileObject.ExtendedName.Replace("\u0000","");
+                    parent.Children.Add(childFileNode);
+                }
+            }
         }
     }
 
