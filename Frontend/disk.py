@@ -66,20 +66,29 @@ class Disk:
         while True:
             for i in range(8):
                 print("disk-blockNumbers-f_n_p", f_n_p)
-                if "." in path[f_n_p]:
+                print("disk-blockNumbers-path[f_n_p]", path[f_n_p])
+                if "." in path[f_n_p]:  # 普通文件
                     file_name = ".".join(path[f_n_p].split(".")[:-1])
                     extension_name = path[f_n_p].split(".")[-1]
-                    file_name = (
-                        file_name
-                        if len(file_name) >= 3
-                        else file_name + "À" * (3 - len(file_name))
-                    )
-                    extension_name = (
-                        extension_name
-                        if len(extension_name) >= 2
-                        else extension_name + "À" * (2 - len(extension_name))
-                    )
-                    full_name = file_name + extension_name
+                else:  # 目录文件
+                    file_name = path[f_n_p]
+                    extension_name = ""
+                print("disk-blockNumbers-file_name", file_name)
+                print("disk-blockNumbers-extension_name", extension_name)
+                file_name = (
+                    file_name
+                    if len(file_name) >= 3
+                    else file_name + "À" * (3 - len(file_name))
+                )
+                extension_name = (
+                    extension_name
+                    if len(extension_name) >= 2
+                    else extension_name + "À" * (2 - len(extension_name))
+                )
+                print("disk-blockNumbers-file_name", file_name)
+                print("disk-blockNumbers-extension_name", extension_name)
+                full_name = file_name + extension_name
+                print("disk-blockNumbers-full_name", full_name)
                 if (
                     full_name == self.content[b_p][0 + i * 8 : 5 + i * 8]
                 ):  # 匹配文件名，匹配成功
@@ -139,11 +148,12 @@ class Disk:
         print("disk-addFile-whole_file_name", whole_file_name)
         if "." in whole_file_name:  # 判断类型
             file_length = "1"  # 普通文件
+            file_name = ".".join(whole_file_name.split(".")[:-1])
+            extension_name = whole_file_name.split(".")[-1]
         else:
             file_length = "0"  # 目录文件
-
-        file_name = ".".join(whole_file_name.split(".")[:-1])
-        extension_name = whole_file_name.split(".")[-1]
+            file_name = whole_file_name
+            extension_name = ""
 
         fcb = (
             (
@@ -202,10 +212,49 @@ class Disk:
         result = self.blockNumbers(file_location)
         print("disk-create-result", result)
         for i in range(len(result)):
+            print("disk-create-result[i]", result[i])
             if "ÀÀÀÀÀÀÀÀ" in self.content[result[i]]:  # 父级目录有空间存放FCB
                 for j in range(8):
                     if self.content[result[i]][j * 8 : j * 8 + 8] == "ÀÀÀÀÀÀÀÀ":
                         start_pos = j * 8
+                        print("disk-create-start_pos", start_pos)
+                        self.addFile(whole_file_name, result[i], start_pos, empty_blocks[0])
+                        break
+                break
+            else:  # 父级目录无空间存放FCB
+                if len(empty_blocks) < 2:
+                    return "磁盘空间不足"
+                start_pos = 0
+                self.addFile(whole_file_name, result[i], start_pos, empty_blocks[1])
+                # 父级目录更改占用标识符
+                self.setBlockTag(empty_blocks[0], "Ł")
+                self.setBlockTag(result[i], chr(empty_blocks[0] + 192))
+
+        for i in range(16):
+            print(self.content[i])
+        return "创建成功"
+    
+    def makdir(self, info):
+        empty_blocks = self.blcokAvailable(2)
+        if len(empty_blocks) < 1:
+            return "磁盘空间不足"
+        whole_path = self.absolutePath(info)
+        print("disk-create-whole_path", whole_path)
+        file_location = whole_path[:-1]
+        print("disk-create-file_location", file_location)
+        whole_file_name = whole_path[-1]
+        start_pos = None
+        print("disk-create-file_location", file_location)
+        result = self.blockNumbers(file_location)
+        print("disk-create-result", result)
+        for i in range(len(result)):
+            print("disk-create-result[i]", result[i])
+            if "ÀÀÀÀÀÀÀÀ" in self.content[result[i]]:  # 父级目录有空间存放FCB
+                for j in range(8):
+                    if self.content[result[i]][j * 8 : j * 8 + 8] == "ÀÀÀÀÀÀÀÀ":
+                        start_pos = j * 8
+                        print("disk-create-start_pos", start_pos)
+                        self.addFile(whole_file_name, result[i], start_pos, empty_blocks[0])
                         break
                 break
             else:  # 父级目录无空间存放FCB

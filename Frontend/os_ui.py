@@ -98,11 +98,20 @@ class MainWindow(QMainWindow):
     def respondCmd(self, cmd_prompt, result):
         method = getattr(self, cmd_prompt, None)
         if method:
-            method(result)
+            pass
+            #method(result)
 
     def cd(self, result):
         self.cmd_win.title = "/".join(result) + "> " if result != [""] else "/> "
         print(result)
 
-    def RequestSendEvent(self, Request):
-        self.parent.RequestSendEvent(Request)
+
+def main():
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
+
+
+if __name__ == "__main__":
+    main()

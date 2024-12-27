@@ -60,8 +60,29 @@ class CmdFormatChecker:
     def delete(self, text):
         return True, "delete命令"
 
-    def makdir(self, text):
-        return True, "mkdidr命令"
+    def makdir(self, cmd_lst):
+        # print("maskdir checking")
+        if len(cmd_lst) != 2 or cmd_lst[1] == "":
+            return False, "makdir", ["命令格式错误"]
+
+        path = re.split(r"/+", cmd_lst[1])
+        if "." in path[-1]:
+            return False, "makdir", ["‘makdir’不能创建文件，请使用‘create’"]
+
+        file_name = path[-1]
+
+        if len(file_name) < 1 or len(file_name) > 3:
+            return (
+                False,
+                "makdir",
+                [f"‘{file_name}’：目录名应为 1~3 字符"],
+            )
+
+        for i in path[:-1]:
+            if "." in i and i != "." and i != "..":
+                return False, "makdir", [f"‘{i}’不是目录"]
+
+        return True, "makdir", path
 
     def deldir(self, text):
         return True, "deldir命令"
