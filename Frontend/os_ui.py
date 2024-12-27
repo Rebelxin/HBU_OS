@@ -105,6 +105,9 @@ class MainWindow(QMainWindow):
         self.cmd_win.title = "/".join(result) + "> " if result != [""] else "/> "
         print(result)
 
+    def RequestSendEvent(self, Request):
+        self.parent.RequestSendEvent(Request)
+
 
 def main():
     app = QApplication(sys.argv)

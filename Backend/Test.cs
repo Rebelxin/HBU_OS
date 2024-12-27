@@ -16,7 +16,9 @@ namespace Backend
         {
             try
             {
-
+                DiskManager disk0 = new();
+                disk0.CreateDisk();
+                disk0.InitializeDisk();
                 FileSystem fileSystem = new FileSystem();
                 fileSystem.ResetDisk();
                 fileSystem.DisplayDisk();

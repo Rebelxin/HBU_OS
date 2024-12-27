@@ -16,8 +16,8 @@ class ClientConnect():
 
 
     def send(self):
+        # 创建 TCP 连接
         try:
-            # 创建 TCP 连接
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
                 client.connect((self.host, self.port))
                 client.sendall(self.message.encode("utf-8"))
@@ -25,7 +25,7 @@ class ClientConnect():
 
                 return  response
         except Exception as e:
-            print(f"通信错误: {str(e)}")
+            raise e
 
 
 class ClientWindow(QMainWindow):
@@ -56,8 +56,14 @@ class ClientWindow(QMainWindow):
     def send_to_csharp(self,data):
         self.text_edit.append("发送中...")
         self.worker = ClientConnect(self.host, self.port, data)
-        response = self.worker.send()
+
+        try:
+            response = self.worker.send()
+        except Exception as e:
+            raise e
         self.handle_response(response)
+
+
 
     def handle_response(self, response):
         self.text_edit.append(f"服务端回复: {response}")
@@ -73,6 +79,7 @@ class ClientWindow(QMainWindow):
     def ConstructFileTree(self,data):
         print("construct")
         json_data = data
+        self.mainWindow.dir_win.root.takeChildren()
         self.mainWindow.dir_win.root.setText(0, json_data["Name"])
         for child in json_data.get("Children", []):
             self.fileTreeAddItem(self.mainWindow.dir_win.root, child)
@@ -88,6 +95,7 @@ class ClientWindow(QMainWindow):
         # 如果有子节点，递归添加
         for child in node.get("Children", []):
             self.fileTreeAddItem(tree_item, child)
+
 
 
 if __name__ == "__main__":

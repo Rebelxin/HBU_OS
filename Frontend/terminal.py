@@ -102,6 +102,10 @@ class Terminal(QPlainTextEdit):
             self.insertPlainText("(▷) Da Capo: ♪\n")
             return
 
+        self.Request = self.ParseCommand(text)  # 解析命令
+        # 请求事件
+        self.parent.RequestSendEvent(self.Request)
+
         cmd = text.split(" ")
         if len(cmd) > 1 and cmd[0] == "setSelectionColor" and cmd[1][0] == "#":
             color = [_ for _ in cmd[1][1:] if _ in "0123456789ABCDEF"]
@@ -116,6 +120,7 @@ class Terminal(QPlainTextEdit):
 
     def process(self):
         text = self.textCursor().block().text()[len(self.title) :]
+
         self.internalCmd(text)  # 处理内部命令
         self.submit.emit(text)  # 提交命令到主窗口
         self.insertPlainText(f"{self.title}")  # 不换行，仅插入title
@@ -165,10 +170,7 @@ class Terminal(QPlainTextEdit):
             self.moveCursor(QTextCursor.EndOfLine)  # 移动光标到行尾
             cmd = self.textCursor().block().text()[len(self.title) :]  # 获取键入命令
 
-            self.Request = self.ParseCommand()  # 解析命令
 
-            #请求事件
-            self.parent.RequestSendEvent(self.Request)
 
             if cmd in self.cmd_history:  # 如果该命令先前使用过，则将其移动到列表最后
                 self.cmd_history.remove(cmd)
@@ -262,12 +264,18 @@ class Terminal(QPlainTextEdit):
         self.extra_selections.clear()
         self.setExtraSelections(self.extra_selections)
 
-    def ParseCommand(self):
-        command = self.textCursor().block().text()[len(self.title):]
+    def ParseCommand(self,command):
+
         commandContent = command.split(" ")
         commandRequest = JSONRequest("",None).getJSON()
         if commandContent[0] == "tree":
             commandRequest = JSONRequest("GET_FILE_TREE", commandContent[1:]).getJSON()
+        if commandContent[0] == "create":
+            commandRequest = JSONRequest("CREATE_FILE", commandContent[1:]).getJSON()
+        if commandContent[0] == "makdir":
+            commandRequest = JSONRequest("CREATE_DIR", commandContent[1:]).getJSON()
+        if commandContent[0] == "delete":
+            commandRequest = JSONRequest("DELETE_FILE", commandContent[1:]).getJSON()
 
         return commandRequest
 

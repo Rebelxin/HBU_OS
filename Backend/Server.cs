@@ -26,6 +26,7 @@ namespace Backend
         }
         static Response HandleRequest(Request request)
         {
+            
             if (request.RequestType == "GET_FILE_TREE")
             {
                 FileSystem fs = new FileSystem();
@@ -37,14 +38,22 @@ namespace Backend
                     Message = "Alllll files!!!!"
                 };
             }
-            else
+            if (request.RequestType == "CREATE_FILE")
             {
+                FileSystem fs = new FileSystem();
+                bool isDirectory = false;
+                if (request.Data[0] == "-d")
+                {
+                    isDirectory = true;
+                }
+                fs.CreateFileObject(request.Data[1], isDirectory);
+            }
+
                 return new Response
                 {
                     Status = "Error",
                     Message = $"Unsupported request type."
                 };
-            }
         }
 
         public static void ListenPort()

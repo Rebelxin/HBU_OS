@@ -24,7 +24,7 @@ class Directory(QTreeWidget):
         self.header().setVisible(False)
 
         # 添加节点，不该存在，仅测试玩玩
-        self.root = QTreeWidgetItem(self, ["根目录"])
+        self.root = QTreeWidgetItem(self, ["root"])
         self.root.setIcon(0, self.icon_root)
         self.root.setData(0, Qt.UserRole, "root")  # 标记根目录
 
