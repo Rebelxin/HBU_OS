@@ -123,7 +123,7 @@ class Disk:
         """
 
     def byteAvailable(self, path):
-        self.blockNumbers(path)
+        self.blockNumbers(path)#asdadasdada#asdadasdada
         pass
 
     def blcokAvailable(self, number):  #  查找空闲块，number为需要的块数

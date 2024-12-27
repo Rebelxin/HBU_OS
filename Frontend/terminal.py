@@ -257,6 +257,7 @@ class Terminal(QPlainTextEdit):
         self.extra_selections.append(selection)
         self.setExtraSelections(self.extra_selections)
 
+    # asdadasdada
     def rmTextBackground(self):
         self.extra_selections.clear()
         self.setExtraSelections(self.extra_selections)
