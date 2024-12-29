@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.Pipes;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -49,15 +50,13 @@ namespace Backend.Process
                     {
                         Registers.PC = currentProcess.PC;
                         Registers.PSW = currentProcess.PSW;
-                        PC_LIMIT = currentProcess.PC_LIMIT;
+                        PC_LIMIT = currentProcess.PC_COUNT;
                         currentProcess.State = ProcessState.Running;
                     }
                 }
 
-                
-                
                 // 模拟执行指令
-                ALU();
+                CPU();
                 Console.WriteLine($"执行进程: {currentProcess.ProcessID}, PC: {Registers.PC},PSW: {Registers.PSW}");
             tick:
                     // 增加时钟
@@ -69,7 +68,7 @@ namespace Backend.Process
         }
 
         // 中央处理器函数，解释并执行指令
-        private void ALU()
+        private void CPU()
         {
             Thread.Sleep(300);
             // 简单模拟：每执行一次，程序计数器加1
@@ -110,10 +109,23 @@ namespace Backend.Process
             else if (clock.IOInterrupt)
             {
                 Console.WriteLine($"进程 {pcb.ProcessID} 发生I/O中断。");
-
                 clock.ResetIOInterrupt();
                 scheduler.BlockProcess(pcb, "I/O");
-                
+
+                using (NamedPipeClientStream pipeClient = new NamedPipeClientStream(".", "testpipe", PipeDirection.In))
+                {
+                    Console.WriteLine("子进程正在尝试连接...");
+                    pipeClient.Connect();
+                    Console.WriteLine("连接成功。");
+
+                    byte[] buffer = new byte[256];
+
+
+                    int bytesRead = pipeClient.Read(buffer, 0, buffer.Length);
+                    string message = Encoding.UTF8.GetString(buffer, 0, bytesRead).Substring(1);
+                    Console.WriteLine($"子进程收到消息: {message}");
+
+                }
             }
         }
 

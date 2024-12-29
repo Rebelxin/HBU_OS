@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Backend.Memory;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,16 +10,28 @@ namespace Backend.Process
     internal class ProcessManager
     {
         private Scheduler scheduler;
+        private MemoryManager memoryManager;
 
-        public ProcessManager(Scheduler scheduler)
+
+        public ProcessManager(Scheduler scheduler,MemoryManager memoryManager)
         {
             this.scheduler = scheduler;
+            this.memoryManager = memoryManager;
         }
 
         // 创建新进程
         public void CreateProcess()
         {
-            scheduler.CreateProcess();
+            var pcb =  scheduler.CreateProcess();
+            memoryManager.AllocateProcessMemory(pcb);
+        }
+
+        public void CreateProcess(string data)
+        {
+            int limit = data.Length;
+
+            var pcb = scheduler.CreateProcess(limit);
+            memoryManager.AllocateProcessMemory(pcb);
         }
 
         public void CreateProcess(int limit)
@@ -34,6 +47,7 @@ namespace Backend.Process
             if (pcb != null)
             {
                 scheduler.TerminateProcess(pcb);
+                memoryManager.RemoveProcessMemory(pcb);
             }
             else
             {

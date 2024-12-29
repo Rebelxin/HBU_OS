@@ -29,4 +29,18 @@ namespace Backend
         { 
         }
     }
+
+    internal class MemoryFullException : Exception
+    {
+        public MemoryFullException(string a)
+            :base(a)
+        {}
+    }
+
+    internal class ThreadLimitException : Exception
+    {
+        public ThreadLimitException()
+            : base("进程数量已满")
+        { }
+    }
 }

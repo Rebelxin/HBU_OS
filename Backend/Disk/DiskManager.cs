@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Backend.Files;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.IO;
@@ -7,8 +8,9 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using Directory = Backend.Files.Directory;
 
-namespace Backend
+namespace Backend.Disk
 {
     internal class DiskManager
     {
@@ -56,7 +58,7 @@ namespace Backend
             using (BinaryWriter writer = new(File.Open(DiskPath, FileMode.Open)))
             {
                 // 写入单个byte到文件
-                for (int i = 0; i < BlockNum * BlockSize; i++)
+                for (int i = 2*BlockSize; i < BlockNum * BlockSize; i++)
                 {
                     writer.Write(nullData);
                 }

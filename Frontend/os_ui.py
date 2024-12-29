@@ -82,24 +82,14 @@ class MainWindow(QMainWindow):
         self.cmd_win.submit.connect(self.getCmd)
 
     def getCmd(self, cmd: str):
-# print("check")
-        # status, cmd_prompt, info = self.cmd_checker.check(cmd)
-        # print(status, cmd_prompt, info)
-        # cmd_checker只负责细致检查命令格式，不检查命令是否能执行成功
-        # status: bool, True表示命令格式正确，False表示命令格式错误
-        # cmd_prompt: str, 命令提示符
-        # info: lst, 内容，命令格式正确时为路径等必要信息，命令格式错误时则为报错信息
-
-        # if status:
-        #     result = self.disk.operate(cmd_prompt, info)
-        #     if result:
-        #         self.respondCmd(cmd_prompt, result)
+        return   # 暂时不用
 
     def respondCmd(self, cmd_prompt, result):
         method = getattr(self, cmd_prompt, None)
         if method:
             pass
-            #method(result)
+        else:
+            method(result)
 
     def cd(self, result):
         self.cmd_win.title = "/".join(result) + "> " if result != [""] else "/> "

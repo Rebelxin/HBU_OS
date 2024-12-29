@@ -23,8 +23,10 @@ namespace Backend.Process
         public ProcessState State { get; set; }
         public string WaitReason { get; set; }
         public int PageTable { get; set; }
-        public string IntermediateResult { get; set; }
-        public int PC_LIMIT { get; set; }
+        public int PC_COUNT { get; set; }
+        public int RequiredFrame { get; set; }
+
+        public int BlockID { get; set; }
 
         public ProcessControlBlock(int pid,int limit)
         {
@@ -34,8 +36,8 @@ namespace Backend.Process
             State = ProcessState.Ready;
             WaitReason = "";
             PageTable = -1;
-            IntermediateResult = "";
-            PC_LIMIT = limit;
+            PC_COUNT = limit;
+            RequiredFrame = PC_COUNT / 5;
         }
 
         public override string ToString()

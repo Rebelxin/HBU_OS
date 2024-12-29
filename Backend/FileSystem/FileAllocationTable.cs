@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Backend.Disk;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Backend
+namespace Backend.Files
 {
 
     internal class FileAllocationTable
@@ -31,12 +32,12 @@ namespace Backend
             BitMap[0] = true;
             BitMap[1] = true;
             BitMap[2] = true;
+            
         }
         public int AllocateBlock()
         {
             for (int i = 0; i < BlockNum; i++)
             {
-
                 if (!BitMap[i]) // 如果未使用
                 {
                     BitMap[i] = true; // 标记为已分配

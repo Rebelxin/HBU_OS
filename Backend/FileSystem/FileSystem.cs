@@ -1,10 +1,11 @@
-﻿using System.IO;
+﻿using Backend.Disk;
+using System.IO;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Text.Json;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace Backend
+namespace Backend.Files
 {
     internal class FileSystem
     {
@@ -25,6 +26,8 @@ namespace Backend
         public FileSystem()
         {
             DiskManager0 = new DiskManager();
+            FAT = new FileAllocationTable();
+            DiskManager0.WriteFAT2Disk(FAT);
             FAT = DiskManager0.ReadData2FAT();
             RootDirectory = DiskManager0.ReadData2Directory(FAT, 2);
         }
@@ -57,7 +60,7 @@ namespace Backend
             return (superDirectoryName, fileName);
         }
 
-        private (string, string) SplitName(string fullName)
+        public static (string, string) SplitName(string fullName)
         {
             string extendedName;
             string fileName = fullName;
@@ -91,7 +94,8 @@ namespace Backend
             DirectoryEntry fileObject = default;
             for (int i = 0; i < parts.Length; i++)
             {
-                fileObject = dir.FindFileObject(parts[i]);
+                var tmp = parts[i].CheckFileName();
+                fileObject = dir.FindFileObject(tmp);
                 if (EqualityComparer<DirectoryEntry>.Default.Equals(fileObject, default))
                 {
                     throw new FileObjectPathNotExistException();
@@ -129,7 +133,15 @@ namespace Backend
             string extendedName, fileName;
 
             (fileName, extendedName) = SplitName(parts[parts.Length - 1]);
+            fileName = fileName.CheckFileName();
+            extendedName = extendedName.CheckExtendedName();
+
             parts[parts.Length - 1] = fileName;
+
+            for (int i = 0; i < parts.Length - 1; i++)
+            {
+                parts[i] = parts[i].CheckFileName();
+            }
 
             Directory dir = RootDirectory;
             DirectoryEntry fileObject = default;
@@ -196,11 +208,11 @@ namespace Backend
             else
             {
                 (fileName, extendedName) = SplitName(fileName);
-                fileName = fileName.CheckFileName();
-                extendedName = extendedName.CheckExtendedName();
-
 
             }
+
+            fileName = fileName.CheckFileName();
+            extendedName = extendedName.CheckExtendedName();
 
             Directory parentDirectory;
             DirectoryEntry parentDirectoryEntry;
@@ -214,11 +226,12 @@ namespace Backend
             {
                 if (subFile.FileObjectName == fileName
                     && subFile.ExtendedName == extendedName)
+                    
                 {
                     throw new FileNameConflictException(fileName);
                 }
             }
-            if ((parentDirectory.FileObjects.Count + 1) % (DiskManager.BlockSize / 8) >= 0)
+            if (((parentDirectory.FileObjects.Count + 1) % (DiskManager.BlockSize / 8) >= 0)&& parentDirectory.FileObjects.Count>8)
             {
                 int extendBlock = FAT.AllocateBlock();
                 FAT.LinkBlocks(FAT.GetEndBlock(parentDirectoryEntry.StartBlock), extendBlock);

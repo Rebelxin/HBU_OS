@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace Backend
+namespace Backend.Files
 {
     internal struct DirectoryEntry
     {

@@ -22,6 +22,7 @@ namespace Backend
         {
             if (str.Length < limit)
             {
+                
                 return str + "\0".Repeat(limit - str.Length);
             }
             if (str.Length > limit)
