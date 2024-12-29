@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using static Backend.Server;
 
 namespace Backend
 {
@@ -32,7 +31,18 @@ namespace Backend
                 fileSystem.CreateFileObject("\\td1\\td2", true);
                 fileSystem.CreateFileObject("\\td1\\td2\\tf5", false);
                 fileSystem.CreateFileObject("\\tf6", false);
-                fileSystem.CreateFileObject("\\tf6", false);
+
+                try
+                {
+                    fileSystem.CreateFileObject("\\tf6", false);
+                }
+                catch (Exception e )
+                {
+
+                    Console.WriteLine(e);
+                }
+
+                
                 fileSystem.CreateFileObject("\\tf7", false);
                 fileSystem.ListAllFiles();
                 string data = "aabbbaaa\naa";
@@ -77,10 +87,14 @@ namespace Backend
             }
         }
 
-        static void Main(string[] args)
-        {
-            TestFileSystem();
-            Server.ListenPort();
-        }
+        //static void Main(string[] args)
+        //{
+        //    //TestFileSystem();
+        //    //Server.ListenPort();
+
+        //    //var a = "a";
+        //    //Console.WriteLine(a.CheckFileName()+" "+a.Length);
+        //    //Console.WriteLine(a.CheckExtendedName() + " " + a.Length);
+        //}
     }
 }

@@ -103,8 +103,10 @@ class Terminal(QPlainTextEdit):
             return
 
         self.Request = self.ParseCommand(text)  # 解析命令
-        # 请求事件
-        self.parent.RequestSendEvent(self.Request)
+
+        if self.Request is not None:
+            # 请求事件
+            self.parent.RequestSendEvent(self.Request)
 
         cmd = text.split(" ")
         if len(cmd) > 1 and cmd[0] == "setSelectionColor" and cmd[1][0] == "#":
@@ -265,17 +267,22 @@ class Terminal(QPlainTextEdit):
         self.setExtraSelections(self.extra_selections)
 
     def ParseCommand(self,command):
-
+        command = command.replace("/", "\\")
         commandContent = command.split(" ")
-        commandRequest = JSONRequest("",None).getJSON()
+        commandRequest = []
         if commandContent[0] == "tree":
-            commandRequest = JSONRequest("GET_FILE_TREE", commandContent[1:]).getJSON()
+            commandRequest.append(JSONRequest("GET_FILE_TREE", commandContent[1:]).getJSON())
         if commandContent[0] == "create":
-            commandRequest = JSONRequest("CREATE_FILE", commandContent[1:]).getJSON()
+            if len(commandContent) == 2:
+                commandContent.insert(1, "-f")
+            commandRequest.append(JSONRequest("CREATE_FILE", commandContent[1:]).getJSON())
+            commandRequest.append(JSONRequest("GET_FILE_TREE", []).getJSON())
         if commandContent[0] == "makdir":
-            commandRequest = JSONRequest("CREATE_DIR", commandContent[1:]).getJSON()
+            commandRequest.append(JSONRequest("CREATE_DIR", commandContent[1:]).getJSON())
+            commandRequest.append(JSONRequest("GET_FILE_TREE", []).getJSON())
         if commandContent[0] == "delete":
-            commandRequest = JSONRequest("DELETE_FILE", commandContent[1:]).getJSON()
+            commandRequest.append(JSONRequest("DELETE_FILE", commandContent[1:]).getJSON())
+            commandRequest.append(JSONRequest("GET_FILE_TREE", []).getJSON())
 
         return commandRequest
 

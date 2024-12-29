@@ -15,9 +15,17 @@ namespace Backend
             }
             set
             {
-                if (value.Length > 8)
+                if (value.Length > 3)
                 {
-                    value = value.Substring(0, 8);
+                    value = value.Substring(0, 3);
+                }
+                if (value.Length == 1)
+                {
+                    value += "\0\0";
+                }
+                if (value.Length == 2)
+                {
+                    value += "\0";
                 }
                 byte[] asciiBytes = Encoding.ASCII.GetBytes(value);
                 string asciiString = Encoding.ASCII.GetString(asciiBytes);

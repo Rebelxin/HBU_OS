@@ -12,9 +12,9 @@ namespace Backend
         {
             public string Name { get; set; }
             public bool IsDirectory { get; set; }
-            public int StartBlock { get; set; }      
-            public long FileSize { get; set; }        
-            public List<FileNode> Children { get; set; } = new(); 
+            public int StartBlock { get; set; }
+            public long FileSize { get; set; }
+            public List<FileNode> Children { get; set; } = new();
         }
 
         public FileAllocationTable FAT;
@@ -48,7 +48,7 @@ namespace Backend
             string fileName = Path.GetFileName(path);
             if (fileName == null || superDirectoryName == null)
             {
-                throw new Exception("文件不存在");
+                throw new FileObjectPathNotExistException();
             }
             if (superDirectoryName.Length != 1)
             {
@@ -94,11 +94,11 @@ namespace Backend
                 fileObject = dir.FindFileObject(parts[i]);
                 if (EqualityComparer<DirectoryEntry>.Default.Equals(fileObject, default))
                 {
-                    throw new Exception("文件不存在");
+                    throw new FileObjectPathNotExistException();
                 }
                 if (!fileObject.IsDirectory)
                 {
-                    throw new Exception("文件不存在");
+                    throw new FileObjectPathNotExistException();
                 }
                 dir = DiskManager0.ReadData2Directory(FAT, fileObject.StartBlock);
             }
@@ -138,7 +138,7 @@ namespace Backend
                 DirectoryEntry directoryEntry = dir.FindFileObject(parts[i]);
                 if (EqualityComparer<DirectoryEntry>.Default.Equals(directoryEntry, default))
                 {
-                    throw new Exception("文件不存在");
+                    throw new FileObjectPathNotExistException();
                 }
                 //不是文件则是目录继续向下寻找
                 dir = DiskManager0.ReadData2Directory(FAT, directoryEntry.StartBlock);
@@ -147,7 +147,7 @@ namespace Backend
             fileObject = dir.FindFileObject(fileName, extendedName);
             if (EqualityComparer<DirectoryEntry>.Default.Equals(fileObject, default))
             {
-                throw new Exception("文件不存在");
+                throw new FileObjectPathNotExistException();
             }
 
             return fileObject;
@@ -178,7 +178,7 @@ namespace Backend
                 catch (Exception)
                 {
 
-                    throw new Exception("文件不存在");
+                    throw new FileObjectPathNotExistException();
                 }
             }
             return fileObject;
@@ -186,6 +186,8 @@ namespace Backend
         public void CreateFileObject(string fullFileName, bool isDirectory)
         {
             (string superDirectoryName, string fileName) = SplitPath(fullFileName);
+
+
             string extendedName;
             if (isDirectory)
             {
@@ -194,6 +196,10 @@ namespace Backend
             else
             {
                 (fileName, extendedName) = SplitName(fileName);
+                fileName = fileName.CheckFileName();
+                extendedName = extendedName.CheckExtendedName();
+
+
             }
 
             Directory parentDirectory;
@@ -202,15 +208,14 @@ namespace Backend
             (parentDirectoryEntry, parentDirectory) = NavigateDirectory(superDirectoryName);
             if (parentDirectoryEntry.FileObjectName == "rot" && parentDirectory.FileObjects.Count >= DiskManager.BlockSize / 8)
             {
-                throw new Exception($"文件 \"{fileName}\" 创建失败，根目录无法创建更多文件对象");
+                throw new RootDirectoryLimitExceededException();
             }
             foreach (var subFile in parentDirectory.FileObjects)
             {
                 if (subFile.FileObjectName == fileName
                     && subFile.ExtendedName == extendedName)
                 {
-                    Console.WriteLine($"文件 \"{fileName}\" 创建失败，文件名重复！");
-                    return;
+                    throw new FileNameConflictException(fileName);
                 }
             }
             if ((parentDirectory.FileObjects.Count + 1) % (DiskManager.BlockSize / 8) >= 0)
@@ -223,7 +228,11 @@ namespace Backend
             entryStartBlock = parentDirectoryEntry.StartBlock;
 
             int startBlock = FAT.AllocateBlock();
+
+
             parentDirectory.AddFileObject(fileName, startBlock, isDirectory, extendedName);
+
+
 
             DiskManager0.WriteFAT2Disk(FAT);
             DiskManager0.WriteDirectory2Disk(parentDirectory, FAT, entryStartBlock);
@@ -445,28 +454,35 @@ namespace Backend
 
         public FileNode TraverseFileTree()
         {
-            FileNode rootNode = new FileNode{ 
-                Name = "root",
+            FileNode rootNode = new FileNode
+            {
+                Name = "rot",
                 IsDirectory = true,
                 FileSize = 1,
                 StartBlock = 2
             };
 
 
-            BuildFileTree(RootDirectory,rootNode);
+            BuildFileTree(RootDirectory, rootNode);
 
             string json = JsonSerializer.Serialize(rootNode, new JsonSerializerOptions
             {
                 WriteIndented = true // 美化 JSON 输出
             });
 
-            Console.WriteLine(json);
+            ListAllFiles();
 
             return rootNode;
         }
 
-        private void BuildFileTree(Directory dir,FileNode parent)
+        private void BuildFileTree(Directory dir, FileNode parent)
         {
+            if (parent.Name == "rot")
+            {
+                Console.WriteLine("root num: " + dir.FileObjects.Count);
+            }
+
+
             foreach (var fileObject in dir.FileObjects)
             {
                 FileNode childFileNode = new FileNode();
@@ -474,6 +490,7 @@ namespace Backend
                 childFileNode.IsDirectory = fileObject.IsDirectory;
                 childFileNode.StartBlock = fileObject.StartBlock;
                 childFileNode.FileSize = fileObject.FileSize;
+
 
 
                 if (fileObject.IsDirectory)
@@ -488,7 +505,7 @@ namespace Backend
                 }
                 else
                 {
-                    childFileNode.Name = fileObject.FileObjectName + "." + fileObject.ExtendedName.Replace("\u0000","");
+                    childFileNode.Name = fileObject.FileObjectName + "." + fileObject.ExtendedName.Replace("\u0000", "");
                     parent.Children.Add(childFileNode);
                 }
             }

@@ -32,6 +32,7 @@ class CmdFormatChecker:
             return False, "create", ["命令格式错误"]
 
         path = re.split(r"/+", cmd_lst[1])
+        path = [x for x in path if x]
         if "." not in path[-1]:
             return False, "create", ["‘create’不能创建目录，请使用‘mkdir’"]
 
@@ -57,8 +58,14 @@ class CmdFormatChecker:
 
         return True, "create", path
 
-    def delete(self, text):
-        return True, "delete命令"
+    def delete(self, cmd_lst):
+        if len(cmd_lst) != 2 or cmd_lst[1] == "":
+            return False, "delete", ["命令格式错误"]
+
+        path = re.split(r"/+", cmd_lst[1])
+        path = [x for x in path if x]
+
+        return True, "delete", path
 
     def makdir(self, cmd_lst):
         # print("maskdir checking")
@@ -98,3 +105,8 @@ class CmdFormatChecker:
 
     def edit(self, text):
         return True, "edit命令"
+
+
+if __name__ == "__main__":
+    checker = CmdFormatChecker()
+    print(checker.check("create /asd/a.as"))

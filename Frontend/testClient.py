@@ -21,9 +21,18 @@ class ClientConnect():
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
                 client.connect((self.host, self.port))
                 client.sendall(self.message.encode("utf-8"))
-                response = client.recv(1024).decode("utf-8")
 
-                return  response
+                buffer_size = 4096  # 设置缓冲区大小
+                response = ""
+
+                while True:
+                    # 一次读取 buffer_size 大小的数据
+                    chunk = client.recv(buffer_size).decode("utf-8")
+                    if not chunk:  # 如果读取到空数据，说明传输结束
+                        break
+                    response += chunk
+
+                return response
         except Exception as e:
             raise e
 
@@ -70,10 +79,14 @@ class ClientWindow(QMainWindow):
         response = json.loads(response)
         if self.requestType == "GET_FILE_TREE":
             self.ConstructFileTree(response["Data"])
+        if self.requestType == "CREATE_FILE":
+            if response["Status"] == "Error":
+                print(response["Message"])
 
-    def RequestSendEvent(self, Request):
-        self.requestType = json.loads(Request)["RequestType"]
-        self.send_to_csharp(Request)
+    def RequestSendEvent(self, Requests):
+        for request in Requests:
+            self.requestType = json.loads(request)["RequestType"]
+            self.send_to_csharp(request)
 
 
     def ConstructFileTree(self,data):

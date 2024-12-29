@@ -24,9 +24,11 @@ namespace Backend
             public object Data { get; set; }
             public string Message { get; set; }
         }
+
+
         static Response HandleRequest(Request request)
         {
-            
+
             if (request.RequestType == "GET_FILE_TREE")
             {
                 FileSystem fs = new FileSystem();
@@ -38,22 +40,77 @@ namespace Backend
                     Message = "Alllll files!!!!"
                 };
             }
+
             if (request.RequestType == "CREATE_FILE")
             {
+
                 FileSystem fs = new FileSystem();
                 bool isDirectory = false;
                 if (request.Data[0] == "-d")
                 {
                     isDirectory = true;
                 }
-                fs.CreateFileObject(request.Data[1], isDirectory);
-            }
+                try
+                {
+                    fs.CreateFileObject(request.Data[1], isDirectory);
+                }
+                catch (Exception e)
+                {
+                    if (e is FileNameConflictException)
+                    {
+                        return new Response
+                        {
+                            Status = "Error",
+                            Data = "",
+                            Message = "文件名称重复"
+                        };
+                    }
+                    if (e is RootDirectoryLimitExceededException)
+                    {
+                        return new Response
+                        {
+                            Status = "Error",
+                            Data = "",
+                            Message = "根目录下文件数量限制"
+                        };
+                    }
+                }
 
                 return new Response
                 {
-                    Status = "Error",
-                    Message = $"Unsupported request type."
+                    Status = "Success",
+                    Data = "",
+                    Message = "Alllll files!!!!"
                 };
+            }
+
+
+            if (request.RequestType == "DELETE_FILE")
+            {
+                FileSystem fs = new FileSystem();
+                try
+                {
+                    fs.DeleteFileObject(request.Data[0]);
+                }
+                catch (Exception e)
+                {
+                    if (e is FileObjectPathNotExistException)
+                    {
+                        return new Response
+                        {
+                            Status = "Error",
+                            Message = $"文件不存在"
+                        };
+                    }
+                }
+
+            }
+
+            return new Response
+            {
+                Status = "Error",
+                Message = $"Unsupported request type."
+            };
         }
 
         public static void ListenPort()
@@ -73,8 +130,6 @@ namespace Backend
                 string receivedData = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
                 var request = JsonSerializer.Deserialize<Request>(receivedData);
-
-                Console.WriteLine(request);
 
                 Console.WriteLine($"Received: {request.RequestType}");
 

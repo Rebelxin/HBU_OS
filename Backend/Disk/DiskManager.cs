@@ -29,7 +29,7 @@ namespace Backend
         {
             if (File.Exists(DiskPath))
             {
-                Console.WriteLine("文件已存在\n" + DiskPath);
+                Console.WriteLine("磁盘文件存在");
             }
             else
             {
