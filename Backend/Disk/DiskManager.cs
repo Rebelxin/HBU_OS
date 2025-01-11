@@ -9,26 +9,47 @@ using System.Text;
 using System.Threading.Tasks;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Directory = Backend.Files.Directory;
+using SystemDirectory = System.IO.Directory;
 
 namespace Backend.Disk
 {
-    internal class DiskManager
+    public class DiskManager
     {
         public string DiskName { get; private set; }
 
         public static short BlockNum = 128;
         public static short BlockSize = 64;
+        private string ApplicationPath = "HBUOS";
 
-        private string DiskPath;
+        public static string DiskPath { get; private set; }
         public DiskManager(string name = "disk0")
         {
             DiskName = name;
-            DiskPath = Path.Combine(Environment.CurrentDirectory, DiskName);
+            DiskPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ApplicationPath);
             CreateDisk();
         }
 
         public void CreateDisk()
         {
+            if (SystemDirectory.Exists(DiskPath))
+            {
+                Console.WriteLine("程序文件夹存在");
+            }
+            else
+            {
+                try
+                {
+                    SystemDirectory.CreateDirectory(DiskPath);
+                    
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("创建程序文件夹时出错: " + ex.Message);
+                }
+            }
+
+            DiskPath = Path.Combine(DiskPath, DiskName);
+
             if (File.Exists(DiskPath))
             {
                 Console.WriteLine("磁盘文件存在");
@@ -41,8 +62,9 @@ namespace Backend.Disk
                     using (FileStream fs = File.Create(DiskPath))
                     {
                         // 文件已创建，可以进行其他操作，比如写入内容
-                        Console.WriteLine("文件已创建： " + DiskPath);
                     }
+                    InitializeDisk();
+                    Console.WriteLine("文件已创建： " + DiskPath);
                 }
                 catch (Exception ex)
                 {
@@ -51,7 +73,7 @@ namespace Backend.Disk
             }
         }
 
-        public void InitializeDisk()
+        public static void InitializeDisk()
         {
             byte nullData = 0;
             // 使用BinaryWriter来写入单个byte

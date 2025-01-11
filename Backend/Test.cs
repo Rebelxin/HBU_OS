@@ -12,29 +12,11 @@ namespace Backend
 {
     internal class Test
     {
-        public static void PrintBitmap(bool[] bitmap, int width)
-        {
-            Console.WriteLine("磁盘分配情况：");
-            for (int i = 0; i < bitmap.Length; i++)
-            {
-                // 判断块是否占用，显示不同的字符
-                if (bitmap[i])
-                    Console.Write(" █ "); // 占用
-                else
-                    Console.Write(" ░ "); // 空闲
-
-                // 控制行的宽度
-                if ((i + 1) % width == 0)
-                    Console.WriteLine(); // 换行
-            }
-        }
+        
         static void CMD()
         {
             
             // 初始化磁盘管理器和文件系统
-            DiskManager disk0 = new();
-            disk0.CreateDisk();
-            disk0.InitializeDisk();
             FileSystem fileSystem = new FileSystem();
 
             // 提示用户输入命令
@@ -45,6 +27,7 @@ namespace Backend
             {
                 Console.Write("\n> ");
                 string input = Console.ReadLine();
+                input = input.Replace('/','\\');
                 string[] parts = input.Split(' ', 2); // 分割命令和参数
                 string command = parts[0];
                 string argument = parts.Length > 1 ? parts[1] : "";
@@ -55,11 +38,7 @@ namespace Backend
                     {
                         case "help":
                             Console.WriteLine("可用命令：");
-                            Console.WriteLine("create_disk - 创建磁盘");
-                            Console.WriteLine("initialize_disk - 初始化磁盘");
-                            Console.WriteLine("reset_disk - 重置磁盘");
                             Console.WriteLine("display_disk - 显示磁盘状态");
-                            Console.WriteLine("list_fat <块号> - 显示指定FAT块信息");
                             Console.WriteLine("list_root_files - 列出根目录文件");
                             Console.WriteLine("create_file <路径> <是否目录> - 创建文件或目录");
                             Console.WriteLine("write_file <路径> <数据> - 写入数据到文件");
@@ -73,16 +52,6 @@ namespace Backend
                             Console.WriteLine("exit - 退出程序");
                             break;
 
-                        case "create_disk":
-                            disk0.CreateDisk();
-                            Console.WriteLine("磁盘已创建。");
-                            break;
-
-                        case "initialize_disk":
-                            disk0.InitializeDisk();
-                            Console.WriteLine("磁盘已初始化。");
-                            break;
-
                         case "reset_disk":
                             fileSystem.ResetDisk();
                             Console.WriteLine("磁盘已重置。");
@@ -90,21 +59,9 @@ namespace Backend
 
                         case "display_disk":
                             Console.OutputEncoding = System.Text.Encoding.UTF8;
-                            PrintBitmap(fileSystem.FAT.BitMap,16);
-
+                            fileSystem.ConsoleDisplayFAT(16);
 
                             //fileSystem.DisplayDisk();
-                            break;
-
-                        case "list_fat":
-                            if (int.TryParse(argument, out int block))
-                            {
-                                fileSystem.ListFAT(block);
-                            }
-                            else
-                            {
-                                Console.WriteLine("无效的块号，请输入一个整数。");
-                            }
                             break;
 
                         case "list_root_files":
@@ -207,7 +164,7 @@ namespace Backend
                             break;
 
                         case "show_file":
-                            fileSystem.ShowFile(argument);
+                            fileSystem.ConsoleShowFile(argument);
                             break;
 
                         case "exit":
@@ -224,81 +181,6 @@ namespace Backend
                 {
                     Console.WriteLine($"执行命令时发生错误：{ex.Message}");
                 }
-            }
-        }
-        static bool TestFileSystem()
-        {
-            try
-            {
-                DiskManager disk0 = new();
-                disk0.CreateDisk();
-                disk0.InitializeDisk();
-                FileSystem fileSystem = new FileSystem();
-                fileSystem.ResetDisk();
-                fileSystem.DisplayDisk();
-                fileSystem.ListFAT(5);
-                fileSystem.ListRootFiles();
-                fileSystem.CreateFileObject("\\tf1.t", false);
-                fileSystem.CreateFileObject("\\td1", true);
-                fileSystem.CreateFileObject("\\td1\\tf2", false);
-                fileSystem.CreateFileObject("\\td1\\tf3", false);
-                fileSystem.CreateFileObject("\\td1\\tf4", false);
-                fileSystem.CreateFileObject("\\td1\\td2", true);
-                fileSystem.CreateFileObject("\\td1\\td2\\tf5", false);
-                fileSystem.CreateFileObject("\\tf6", false);
-
-                try
-                {
-                    fileSystem.CreateFileObject("\\tf6", false);
-                }
-                catch (Exception e )
-                {
-
-                    Console.WriteLine(e);
-                }
-
-                
-                fileSystem.CreateFileObject("\\tf7", false);
-                fileSystem.ListAllFiles();
-                string data = "aabbbaaa\naa";
-                fileSystem.WriteData2File("\\tf1.t", data);
-                fileSystem.WriteData2File("\\td1\\tf2", data);
-                fileSystem.ModifyFileObject("\\td1", "td8");
-                fileSystem.DeleteFileObject("\\tf1.t");
-                fileSystem.DeleteFileObject("\\td8\\td2");
-                fileSystem.ListAllFiles();
-                fileSystem.ModifyFileObject("\\tf7", "tf1.k");
-                fileSystem.ListAllFiles();
-                fileSystem.ListFAT(15);
-                fileSystem.CopyFileObject("\\tf6", "\\td8\\tf6");
-                fileSystem.MoveFileObject("\\td8\\tf2", "\\tf2");
-                fileSystem = new FileSystem();
-                fileSystem.DisplayDisk();
-                fileSystem.ListFAT(5);
-                fileSystem.TraverseFileTree();
-                fileSystem.ShowFile("\\tf2");
-                string data1 = "";
-                try
-                {
-                    data1 = fileSystem.ReadFile("\\td8\\tf2");
-                }
-                catch (Exception)
-                {
-                    Console.WriteLine("no file");
-                }
-                Console.WriteLine("数据为：" + data1);
-
-                DirectoryEntry fileObject = default;
-
-                //Console.WriteLine("StartBlock: "+fileObject.StartBlock);
-
-
-                return true;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                return false;
             }
         }
 

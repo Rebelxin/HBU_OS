@@ -1,0 +1,24 @@
+﻿<Window x:Class="ReallyFrontend.InputFileNameWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ReallyFrontend"
+        mc:Ignorable="d"
+        Title="InputFileNameWindow" Height="90" Width="250"
+        WindowStartupLocation="CenterScreen">
+    <Grid>
+        <StackPanel>
+            <TextBox x:Name="NameTextBox" Margin="5"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+
+                <Button Content="Create File" Click="FileButton_Click" Margin="5" Grid.Column="0"/>
+                <Button Content="Create Directory" Click="DirectoryButton_Click" Margin="5" Grid.Column="1"/>
+            </Grid>
+        </StackPanel>
+    </Grid>
+</Window>

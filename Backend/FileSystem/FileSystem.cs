@@ -7,7 +7,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Backend.Files
 {
-    internal class FileSystem
+    public class FileSystem
     {
         public class FileNode
         {
@@ -18,8 +18,8 @@ namespace Backend.Files
             public List<FileNode> Children { get; set; } = new();
         }
 
-        public FileAllocationTable FAT;
-        public Directory RootDirectory;
+        private FileAllocationTable FAT;
+        private Directory RootDirectory;
         private readonly DiskManager DiskManager0;
         private FileNode RootNode;
 
@@ -27,14 +27,13 @@ namespace Backend.Files
         {
             DiskManager0 = new DiskManager();
             FAT = new FileAllocationTable();
-            DiskManager0.WriteFAT2Disk(FAT);
             FAT = DiskManager0.ReadData2FAT();
             RootDirectory = DiskManager0.ReadData2Directory(FAT, 2);
         }
 
         public void ResetDisk()
         {
-            DiskManager0.InitializeDisk();
+            DiskManager.InitializeDisk();
             FAT = new FileAllocationTable();
             DiskManager0.WriteFAT2Disk(FAT);
             RootDirectory = DiskManager0.ReadData2Directory(FAT, 2);
@@ -62,22 +61,15 @@ namespace Backend.Files
 
         public static (string, string) SplitName(string fullName)
         {
-            string extendedName;
+            string extendedName="";
             string fileName = fullName;
             if (fullName.Contains("."))
             {
                 string[] tmp = fullName.Split(".");
                 fileName = tmp[0];
                 extendedName = tmp[1];
-                if (extendedName.Length == 1)
-                {
-                    extendedName += '\0';
-                }
             }
-            else
-            {
-                extendedName = "\0\0";
-            }
+            extendedName = extendedName.CheckExtendedName();
             return (fileName, extendedName);
 
         }
@@ -195,6 +187,14 @@ namespace Backend.Files
             }
             return fileObject;
         }
+
+        public bool IsDirectory(string fileObjectPath)
+        {
+            DirectoryEntry fileObject = NavigateFileObject(fileObjectPath);
+
+            return fileObject.IsDirectory;
+        }
+
         public void CreateFileObject(string fullFileName, bool isDirectory)
         {
             (string superDirectoryName, string fileName) = SplitPath(fullFileName);
@@ -405,7 +405,7 @@ namespace Backend.Files
             Console.WriteLine($"文件 \"{fullFileObjectPath}\" 删除成功");
         }
 
-        public void ShowFile(string fullFileObjectPath)
+        public void ConsoleShowFile(string fullFileObjectPath)
         {
             var fileObject = NavigateFileObject(fullFileObjectPath);
             Console.WriteLine("文件对象信息: ");
@@ -425,7 +425,16 @@ namespace Backend.Files
             RootDirectory.T_ListFiles();
         }
 
-        public void ListFilesFromDirectory(Directory dir, int incident)
+        public string GetFileObjectInformation(string fullFileObjectPath)
+        {
+            var fileObject = NavigateFileObject(fullFileObjectPath);
+            string result="";
+            result += "文件对象大小： " + fileObject.FileSize+"  ";
+            result += "文件对象起始块： " + fileObject.StartBlock+"  \n";
+            return result;
+        }
+
+        private void ListFilesFromDirectory(Directory dir, int incident)
         {
             string incidents = " | ".Repeat(incident);
             foreach (var fileObject in dir.FileObjects)
@@ -455,16 +464,6 @@ namespace Backend.Files
 
         }
 
-        public void DisplayDisk()
-        {
-            DiskManager0.ReadData();
-        }
-
-        public void ListFAT(int limit)
-        {
-            FAT.T_ListFat(limit);
-        }
-
         public FileNode TraverseFileTree()
         {
             FileNode rootNode = new FileNode
@@ -475,15 +474,7 @@ namespace Backend.Files
                 StartBlock = 2
             };
 
-
             BuildFileTree(RootDirectory, rootNode);
-
-            string json = JsonSerializer.Serialize(rootNode, new JsonSerializerOptions
-            {
-                WriteIndented = true // 美化 JSON 输出
-            });
-
-            ListAllFiles();
 
             return rootNode;
         }
@@ -522,6 +513,32 @@ namespace Backend.Files
                     parent.Children.Add(childFileNode);
                 }
             }
+        }
+
+        public void ConsoleDisplayFAT(int width)
+        {
+            bool[] bitmap = FAT.BitMap;
+            Console.WriteLine("磁盘分配情况：");
+            for (int i = 0; i < bitmap.Length; i++)
+            {
+                // 判断块是否占用，显示不同的字符
+                if (bitmap[i])
+                    Console.Write(" █ "); // 占用
+                else
+                    Console.Write(" ░ "); // 空闲
+
+                // 控制行的宽度
+                if ((i + 1) % width == 0)
+                    Console.WriteLine(); // 换行
+            }
+        }
+
+        public bool[] GetDiskBitMap()
+        {
+            bool[] bools = null;
+
+            bools = FAT.BitMap;
+            return bools;
         }
     }
 

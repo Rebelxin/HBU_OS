@@ -2,7 +2,7 @@
 
 namespace Backend.Files
 {
-    internal struct DirectoryEntry
+    public struct DirectoryEntry
     {
         private string _fileName;
 
@@ -70,7 +70,7 @@ namespace Backend.Files
         public bool IsDirectory { get; set; }
     }
 
-    internal class Directory
+    public class Directory
     {
         public List<DirectoryEntry> FileObjects = new List<DirectoryEntry>();
         public void AddFileObject(string fileName, int startBlock, bool isDirectory, string extendedName)

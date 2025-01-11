@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Backend.Files
 {
 
-    internal class FileAllocationTable
+    public class FileAllocationTable
     {
         //一个块用一个字节表示
         //存储中4个bit代表下一个块号,4个bit代表是否分配
